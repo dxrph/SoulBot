@@ -221,7 +221,7 @@ async function refreshPanels(guild) {
       const list = await asList(key, guild);
       const titles = new Set(list.map(titleOf));
       const recent = await ch.messages.fetch({ limit: 100 }).catch(() => []);
-      for (const m of recent) {
+      for (const m of recent.values()) {
         if (m.author.id === guild.client.user.id && titles.has(m.embeds[0]?.title)) await m.delete().catch(() => {});
       }
       for (const payload of list) await ch.send(payload);

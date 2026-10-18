@@ -41,13 +41,18 @@ async function check(client) {
       const ch = channelByKey(guild, key);
       if (!ch?.isTextBased()) { console.log(`patches: channel '${key}' not found in ${guild.name}`); continue; }
 
-      // Dedup without a database: urls already posted by the bot in this channel
       const recent = await ch.messages.fetch({ limit: 50 }).catch(() => null);
       if (!recent) continue;
-      const posted = new Set(recent.filter((m) => m.author.id === client.user.id).flatMap((m) => m.embeds.map((e) => e.url)));
+      // Dedup without a database, from what the bot already posted in this channel.
+      // [...recent.values()]: a Collection's own flatMap/iteration does not give a plain list
+      const mine = [...recent.values()].filter((m) => m.author.id === client.user.id).flatMap((m) => m.embeds).filter((e) => e.url);
+      const posted = new Set(mine.map((e) => e.url));
+      const lastPosted = Math.max(0, ...mine.map((e) => Date.parse(e.timestamp) || 0));
 
-      let fresh = items.filter((n) => !posted.has(urlOf(n)));
-      if (!posted.size) fresh = fresh.slice(-1); // first run: only the latest, don't flood the channel
+      // Only posts newer than the latest one already here: older ones must never reappear
+      const fresh = posted.size
+        ? (lastPosted ? items.filter((n) => !posted.has(urlOf(n)) && n.date * 1000 >= lastPosted) : [])
+        : items.slice(-1); // first run: only the latest, don't flood the channel
       for (const n of fresh) {
         let title = n.title;
         let body = clean(n.contents);

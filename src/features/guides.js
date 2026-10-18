@@ -105,12 +105,18 @@ const signature = (embeds) => JSON.stringify(embeds.map((e) => {
   return [j.title, j.description, (j.fields ?? []).map((f) => [f.name, f.value]), j.footer?.text];
 }));
 
+// Every post of the forum by name. If Discord fails to answer this throws on purpose:
+// an empty list would make the bot recreate all posts as duplicates.
 async function existingThreads(forum) {
   const map = new Map();
-  const active = await forum.threads.fetchActive().catch(() => null);
-  active?.threads.forEach((t) => map.set(t.name, t));
-  const archived = await forum.threads.fetchArchived({ limit: 100 }).catch(() => null);
-  archived?.threads.forEach((t) => { if (!map.has(t.name)) map.set(t.name, t); });
+  (await forum.threads.fetchActive()).threads.forEach((t) => map.set(t.name, t));
+  let before;
+  for (let page = 0; page < 10; page += 1) {
+    const res = await forum.threads.fetchArchived({ limit: 100, before });
+    res.threads.forEach((t) => { if (!map.has(t.name)) map.set(t.name, t); });
+    if (!res.hasMore || !res.threads.size) break;
+    before = res.threads.last();
+  }
   return map;
 }
 
