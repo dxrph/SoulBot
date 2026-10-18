@@ -7,6 +7,13 @@ const FEED = `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=${
 const INTERVAL_MS = 15 * 60_000;
 const urlOf = (item) => `https://store.steampowered.com/news/app/${APP_ID}/view/${item.gid}`;
 
+// Images in a post: [img]{STEAM_CLAN_LOC_IMAGE}/<clan>/<file>[/img] or [img]https://...[/img]
+function imagesOf(text) {
+  return [...text.matchAll(/\[img\]\s*(\S+?)\s*\[\/img\]/gi)]
+    .map((m) => m[1].replace(/^\{STEAM_CLAN_(?:LOC_)?IMAGE\}/, 'https://clan.fastly.steamstatic.com/images'))
+    .filter((u) => /^https?:\/\//.test(u));
+}
+
 // Steam BBCode -> plain Discord text
 function clean(text) {
   return text
@@ -38,15 +45,18 @@ async function check(client) {
     if (!posted.size) fresh = fresh.slice(-1); // first run: only the latest, don't flood the channel
     for (const n of fresh) {
       const body = clean(n.contents);
-      await ch.send({
-        embeds: [new EmbedBuilder()
-          .setColor(0xe67e22)
-          .setTitle(n.title.slice(0, 256))
-          .setURL(urlOf(n))
-          .setDescription(body.length > 3800 ? `${body.slice(0, 3800)}…` : body || null)
-          .setFooter({ text: n.author ? `by ${n.author}` : 'Deadlock' })
-          .setTimestamp(n.date * 1000)],
-      }).catch(console.error);
+      const images = imagesOf(n.contents).slice(0, 4);
+      const main = new EmbedBuilder()
+        .setColor(0xe67e22)
+        .setTitle(n.title.slice(0, 256))
+        .setURL(urlOf(n))
+        .setDescription(body.length > 3800 ? `${body.slice(0, 3800)}…` : body || null)
+        .setFooter({ text: n.author ? `by ${n.author}` : 'Deadlock' })
+        .setTimestamp(n.date * 1000);
+      if (images[0]) main.setImage(images[0]);
+      // Embeds sharing the same url are shown by Discord as one image gallery
+      const extra = images.slice(1).map((img) => new EmbedBuilder().setURL(urlOf(n)).setImage(img));
+      await ch.send({ embeds: [main, ...extra] }).catch(console.error);
     }
   }
 }
