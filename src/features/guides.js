@@ -1,7 +1,8 @@
 const {
-  EmbedBuilder, SlashCommandBuilder, ChannelType, MessageFlags, PermissionFlagsBits: V,
+  EmbedBuilder, SlashCommandBuilder, ChannelType, ChannelFlags, SortOrderType, MessageFlags, PermissionFlagsBits: V,
 } = require('discord.js');
-const { channelByKey } = require('../util');
+const { channelByKey, roleMap } = require('../util');
+const { CLASSES } = require('../heroes');
 
 // Hero and build guides: one forum post per hero, filled from the public Deadlock API.
 // English and Italian forums use the game's own localization, so no translator is needed.
@@ -113,11 +114,125 @@ async function existingThreads(forum) {
   return map;
 }
 
-async function ensureTags(forum, names) {
+// ---- forum setup: permissions, guidelines, tags, default reaction, sort order -----------------
+const GUIDE_POST = { en: '📌 Read me first', it: '📌 Leggimi' };
+
+const FORUM_TEXT = {
+  heroes: {
+    en: {
+      topic: 'Hero guides: one post per hero with abilities, base stats and lore.\n' +
+        '• Reply inside a post to discuss that hero (tips, matchups, mains).\n' +
+        '• Use the class tags to filter heroes. React with ⭐ to mark your favorites.\n' +
+        '• Stay on topic: builds go in Build Guides, looking for a team in looking-for-group.\n' +
+        '• Be respectful. Posts are created and updated by the bot.',
+      title: '📌 READ ME FIRST · HERO GUIDES',
+      lines: [
+        ['📖 What is this', 'One post per hero with abilities, base stats and lore, straight from the game data. The bot keeps them up to date.'],
+        ['💬 How to use it', 'Open a hero and reply to share tips, matchups and tricks. Filter the list with the **class tags** at the top.'],
+        ['⭐ Favorites', 'React to a post with ⭐ to show which heroes the community loves.'],
+        ['🧭 Stay on topic', 'Replies should be about that hero. Builds go in **Build Guides**, teams in **looking-for-group**.'],
+      ],
+    },
+    it: {
+      topic: 'Guide agli eroi: un post per eroe con abilità, statistiche base e storia.\n' +
+        '• Rispondi dentro un post per parlare di quell\'eroe (consigli, matchup, main).\n' +
+        '• Usa i tag delle classi per filtrare. Reagisci con ⭐ per segnare i tuoi preferiti.\n' +
+        '• Resta in tema: le build vanno in Guida Build, la ricerca squadra in looking-for-group.\n' +
+        '• Sii rispettoso. I post sono creati e aggiornati dal bot.',
+      title: '📌 LEGGIMI · GUIDA AGLI EROI',
+      lines: [
+        ['📖 Cos\'è', 'Un post per eroe con abilità, statistiche base e storia, presi dai dati del gioco. Il bot li tiene aggiornati.'],
+        ['💬 Come si usa', 'Apri un eroe e rispondi per condividere consigli, matchup e trucchi. Filtra la lista con i **tag delle classi** in alto.'],
+        ['⭐ Preferiti', 'Reagisci a un post con ⭐ per mostrare quali eroi ama la community.'],
+        ['🧭 Resta in tema', 'Le risposte devono riguardare quell\'eroe. Le build vanno in **Guida Build**, i team in **looking-for-group**.'],
+      ],
+    },
+    emoji: '⭐',
+  },
+  builds: {
+    en: {
+      topic: 'Build guides: the most loved community builds of the week for every hero, updated every 12 hours.\n' +
+        '• Reply inside a post to rate, compare or suggest tweaks to a build.\n' +
+        '• Use the class tags to filter heroes. React with 🔥 for builds that work.\n' +
+        '• Item sections are named by each build author. Build order inside a section is left to right.\n' +
+        '• Be respectful. Posts are created and updated by the bot.',
+      title: '📌 READ ME FIRST · BUILD GUIDES',
+      lines: [
+        ['🛒 What is this', 'For each hero, the top community builds of the week (most favorited in game). Updated automatically every 12 hours.'],
+        ['🧱 Reading a build', 'Each section is a phase of the game named by the build author. Items are listed in the order to buy them: `A › B › C`.'],
+        ['💬 Discuss', 'Reply to rate a build, compare it with another or suggest changes. Test it in game before judging!'],
+        ['🔥 Reactions', 'React with 🔥 to the builds that work for you.'],
+      ],
+    },
+    it: {
+      topic: 'Guida alle build: le build della community più amate della settimana per ogni eroe, aggiornate ogni 12 ore.\n' +
+        '• Rispondi dentro un post per valutare, confrontare o suggerire modifiche a una build.\n' +
+        '• Usa i tag delle classi per filtrare. Reagisci con 🔥 alle build che funzionano.\n' +
+        '• Le sezioni di oggetti sono nominate dall\'autore della build. L\'ordine è da sinistra a destra.\n' +
+        '• Sii rispettoso. I post sono creati e aggiornati dal bot.',
+      title: '📌 LEGGIMI · GUIDA ALLE BUILD',
+      lines: [
+        ['🛒 Cos\'è', 'Per ogni eroe, le build della community più amate della settimana (più preferite in gioco). Si aggiorna da sola ogni 12 ore.'],
+        ['🧱 Leggere una build', 'Ogni sezione è una fase di gioco scelta dall\'autore. Gli oggetti sono nell\'ordine d\'acquisto: `A › B › C`.'],
+        ['💬 Discutine', 'Rispondi per valutare una build, confrontarla con un\'altra o suggerire modifiche. Provala in gioco prima di giudicare!'],
+        ['🔥 Reazioni', 'Reagisci con 🔥 alle build che funzionano per te.'],
+      ],
+    },
+    emoji: '🔥',
+  },
+};
+
+// Recommended forum permissions: members read, react and reply inside posts but never start posts
+async function setForumPermissions(guild, forum) {
+  const R = roleMap(guild);
+  const edit = (role, perms) => role && forum.permissionOverwrites.edit(role, perms).catch((e) => console.warn('forum perms', e.message));
+  await edit(guild.roles.everyone, { CreatePublicThreads: false, CreatePrivateThreads: false, ManageThreads: false });
+  await edit(R.player, {
+    ViewChannel: true, ReadMessageHistory: true, SendMessagesInThreads: true, AddReactions: true,
+    EmbedLinks: true, AttachFiles: true, UseExternalEmojis: true,
+    CreatePublicThreads: false, CreatePrivateThreads: false, ManageThreads: false,
+  });
+  await edit(R.muted, { SendMessagesInThreads: false, AddReactions: false });
+  for (const staff of [R.mod, R.admin, R.owner]) {
+    await edit(staff, { CreatePublicThreads: true, SendMessagesInThreads: true, ManageThreads: true, ManageMessages: true });
+  }
+}
+
+async function setupForum(guild, forum, kind, lang, heroes) {
+  const text = FORUM_TEXT[kind][lang];
+  await setForumPermissions(guild, forum);
+
+  // Class tags with emoji; only staff and the bot can apply them
+  const tagOf = (h) => ({ name: (L[lang].types[h.hero_type] ?? h.hero_type).slice(0, 20), emoji: CLASSES[h.hero_type]?.emoji });
+  const wanted = new Map(heroes.map((h) => [tagOf(h).name, tagOf(h)]));
   const have = new Set(forum.availableTags.map((t) => t.name));
-  const missing = [...new Set(names)].filter((n) => !have.has(n));
-  if (!missing.length) return;
-  await forum.setAvailableTags([...forum.availableTags, ...missing.map((name) => ({ name: name.slice(0, 20) }))]).catch(console.error);
+  const missing = [...wanted.values()].filter((t) => !have.has(t.name));
+  if (missing.length) {
+    await forum.setAvailableTags([
+      ...forum.availableTags.map((t) => ({ id: t.id, name: t.name, moderated: t.moderated, emoji: t.emoji })),
+      ...missing.map((t) => ({ name: t.name, moderated: true, emoji: t.emoji ? { id: null, name: t.emoji } : null })),
+    ]).catch(console.error);
+  }
+
+  // Guidelines (topic), default reaction and sort order
+  if (forum.topic !== text.topic) await forum.setTopic(text.topic).catch(console.error);
+  if (forum.defaultReactionEmoji?.name !== FORUM_TEXT[kind].emoji) {
+    await forum.setDefaultReactionEmoji({ id: null, name: FORUM_TEXT[kind].emoji }).catch(console.error);
+  }
+  if (forum.defaultSortOrder !== SortOrderType.CreationDate) await forum.setDefaultSortOrder(SortOrderType.CreationDate).catch(console.error);
+}
+
+// The pinned "read me" post, always first in the list
+async function ensureGuidePost(forum, threads, kind, lang) {
+  const text = FORUM_TEXT[kind][lang];
+  const embed = new EmbedBuilder()
+    .setColor(kind === 'heroes' ? 0xe67e22 : 0xe74c3c)
+    .setTitle(text.title)
+    .addFields(text.lines.map(([name, value]) => ({ name, value })));
+  const name = GUIDE_POST[lang];
+  await upsertPost(forum, threads, name, [embed]);
+  const thread = threads.get(name);
+  if (thread && !thread.flags.has(ChannelFlags.Pinned)) await thread.pin('Guide post').catch((e) => console.warn('pin', e.message));
 }
 
 // Creates the post, or refreshes its first message when the content changed
@@ -131,7 +246,7 @@ async function upsertPost(forum, threads, name, embeds, tagNames = []) {
     return 'updated';
   }
   const appliedTags = forum.availableTags.filter((t) => tagNames.includes(t.name)).map((t) => t.id);
-  await forum.threads.create({ name, message: { embeds }, appliedTags });
+  threads.set(name, await forum.threads.create({ name, message: { embeds }, appliedTags }));
   return 'created';
 }
 
@@ -155,18 +270,21 @@ async function syncLang(guild, lang) {
 
   if (heroesForum?.type === ChannelType.GuildForum) {
     const typeName = (h) => L[lang].types[h.hero_type] ?? h.hero_type;
-    await ensureTags(heroesForum, heroes.map(typeName));
+    await setupForum(guild, heroesForum, 'heroes', lang, heroes);
     const threads = await existingThreads(heroesForum);
-    for (const h of heroes) {
+    await ensureGuidePost(heroesForum, threads, 'heroes', lang).catch((e) => console.error('guide post', e.message));
+    // newest-first sort: creating Z..A makes the list read A..Z
+    for (const h of [...heroes].reverse()) {
       count(await upsertPost(heroesForum, threads, h.name, heroEmbeds(h, byClass, lang), [typeName(h)]).catch((e) => { console.error(h.name, e.message); return 'skipped'; }));
     }
   }
 
   if (buildsForum?.type === ChannelType.GuildForum) {
     const typeName = (h) => L[lang].types[h.hero_type] ?? h.hero_type;
-    await ensureTags(buildsForum, heroes.map(typeName));
+    await setupForum(guild, buildsForum, 'builds', lang, heroes);
     const threads = await existingThreads(buildsForum);
-    for (const h of heroes) {
+    await ensureGuidePost(buildsForum, threads, 'builds', lang).catch((e) => console.error('guide post', e.message));
+    for (const h of [...heroes].reverse()) {
       try {
         const color = h.colors?.style_hex ? parseInt(h.colors.style_hex.slice(1), 16) : 0xe67e22;
         const list = await topBuilds(h.id, lang);
@@ -220,6 +338,7 @@ function init(client) {
     try {
       if (running) return await i.reply({ content: 'A sync is already running. Try again in a few minutes.', flags: MessageFlags.Ephemeral });
       await i.reply({ content: '⏳ Syncing heroes and builds (a few minutes the first time)...', flags: MessageFlags.Ephemeral });
+      client.emit('patchesCheck');
       const report = await syncAll(client);
       await i.editReply(report?.length ? `✅ Done.\n${report.join('\n')}` : '⚠️ No hero/build forums found. Run /add-tools first.');
     } catch (err) {

@@ -82,6 +82,7 @@ async function addTools(i) {
     if (!R.player) throw new Error('Soulbound role not found. Run /setup-deadlock first.');
     const failed = await buildCategories(i.guild, R, true);
     await ensurePanels(i.guild);
+    i.client.emit('patchesCheck');
     await i.editReply(failed.length
       ? `⚠️ Done, but these forums could not be created: ${failed.join(', ')}. Enable **Community** in Server Settings, then run /add-tools again.`
       : '✅ Tool channels and panels are ready. Run /sync-guides to fill the hero and build forums.');
@@ -130,7 +131,7 @@ async function build(guild) {
   await guild.roles.setPositions(roles.map((d, idx) => ({ role: R[d.key].id, position: Math.max(1, top - idx) }))).catch(() => {});
 
   await guild.roles.everyone.setPermissions([V.ViewChannel, V.ReadMessageHistory, V.AddReactions, V.Connect, V.Speak, V.UseVAD,
-    V.SendMessages, V.EmbedLinks, V.AttachFiles, V.UseExternalEmojis, V.CreateInstantInvite, V.ChangeNickname]);
+    V.SendMessages, V.SendMessagesInThreads, V.EmbedLinks, V.AttachFiles, V.UseExternalEmojis, V.CreateInstantInvite, V.ChangeNickname]);
 
   const failed = await buildCategories(guild, R, false);
   await ensurePanels(guild);

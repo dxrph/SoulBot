@@ -39,7 +39,7 @@ async function check(client) {
   for (const guild of client.guilds.cache.values()) {
     for (const { key, italian } of TARGETS) {
       const ch = channelByKey(guild, key);
-      if (!ch?.isTextBased()) continue;
+      if (!ch?.isTextBased()) { console.log(`patches: channel '${key}' not found in ${guild.name}`); continue; }
 
       // Dedup without a database: urls already posted by the bot in this channel
       const recent = await ch.messages.fetch({ limit: 50 }).catch(() => null);
@@ -54,7 +54,7 @@ async function check(client) {
         if (italian) {
           // On failure skip: the post stays "fresh" and is retried at the next check
           const [t, b] = [await toItalian(title), await toItalian(body)];
-          if (t === null || b === null) continue;
+          if (t === null || b === null) { console.error('patches: translation failed, will retry at next check'); continue; }
           [title, body] = [t, b];
         }
         const images = imagesOf(n.contents).slice(0, 4);
@@ -76,8 +76,14 @@ async function check(client) {
 
 function init(client) {
   client.once('clientReady', () => {
-    const run = () => check(client).catch(console.error);
+    let busy = false; // startup check and a manual trigger must not post the same patch twice
+    const run = async () => {
+      if (busy) return;
+      busy = true;
+      try { await check(client); } catch (e) { console.error(e); } finally { busy = false; }
+    };
     setTimeout(run, 10_000);
+    client.on('patchesCheck', run); // fired right after /add-tools or /sync-guides
     setInterval(run, INTERVAL_MS).unref();
   });
 }

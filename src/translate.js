@@ -50,14 +50,36 @@ async function withGoogle(text) {
   return parts.join('\n');
 }
 
+// Second free fallback (500 characters per request)
+async function withMyMemory(text) {
+  const parts = [];
+  for (const chunk of chunks(text, 450)) {
+    const res = await fetch(`https://api.mymemory.translated.net/get?langpair=en|it&q=${encodeURIComponent(chunk)}`, { signal: AbortSignal.timeout(20_000) });
+    if (!res.ok) throw new Error(`MyMemory ${res.status}`);
+    const out = (await res.json()).responseData?.translatedText;
+    if (!out || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(out)) throw new Error('MyMemory refused the text');
+    parts.push(out);
+  }
+  return parts.join('\n');
+}
+
+// Tries each translator in order; returns null if all fail so callers can retry later
 async function toItalian(text) {
   if (!text?.trim()) return text;
-  try {
-    return process.env.ANTHROPIC_API_KEY ? await withClaude(text) : await withGoogle(text);
-  } catch (err) {
-    console.error('translate failed:', err.message);
-    return null;
+  const engines = [
+    ...(process.env.ANTHROPIC_API_KEY ? [['Claude', withClaude]] : []),
+    ['Google', withGoogle],
+    ['MyMemory', withMyMemory],
+  ];
+  for (const [name, fn] of engines) {
+    try {
+      const out = await fn(text);
+      if (out?.trim()) return out;
+    } catch (err) {
+      console.error(`translate (${name}) failed:`, err.message);
+    }
   }
+  return null;
 }
 
 module.exports = { toItalian };

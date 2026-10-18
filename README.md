@@ -18,6 +18,7 @@ Discord bot that builds and runs a Deadlock community server.
 - `/refresh-panels` reposts all panels after a design change
 - Patch notes: official Valve posts from the Steam news API, every 15 min, with images
 - Italian patch notes (`📰┃patch-notes-ita`): same posts, auto-translated
+- Forums are configured by the bot: recommended permissions, guidelines, class tags with emoji, default reaction, sort order and a pinned read-me post
 - Hero and build forums in English and Italian (`/sync-guides`, refreshed every 12 h): one post per hero, data from the public Deadlock API in the game's own localization
 
 ## Discord setup
