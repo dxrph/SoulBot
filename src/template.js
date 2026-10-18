@@ -44,7 +44,7 @@ const categories = [
     channels: [
       { name: '✅┃verify', type: 'text', readOnly: true, special: 'verify' },
       { name: '🚪┃welcome', type: 'text', readOnly: true, special: 'welcome' },
-      { name: '📜┃rules', type: 'text', readOnly: true },
+      { name: '📜┃rules', type: 'text', readOnly: true, special: 'rules' },
       { name: '📢┃announcements', type: 'text', readOnly: true },
       { name: '🎭┃get-roles', type: 'text', readOnly: true, special: 'roles' },
       { name: '🎫┃support', type: 'text', readOnly: true, special: 'support' },
@@ -66,8 +66,12 @@ const categories = [
     name: '🔥 THE ARCHIVES', vis: 'member',
     channels: [
       { name: '📰┃patch-notes', type: 'text', readOnly: true, special: 'patches' },
-      { name: '🦸┃heroes', type: 'text' },
-      { name: '🛒┃builds-and-items', type: 'text' },
+      { name: '📰┃patch-notes-ita', type: 'text', readOnly: true, special: 'patches_it' },
+      // Forums filled by the bot (one post per hero). noPosts: members reply inside posts, only staff/bot create them
+      { name: '🦸┃hero-guides', type: 'forum', noPosts: true, special: 'heroes_en' },
+      { name: '🛒┃build-guides', type: 'forum', noPosts: true, special: 'builds_en' },
+      { name: '🇮🇹┃guida-eroi', type: 'forum', noPosts: true, special: 'heroes_it' },
+      { name: '🇮🇹┃guida-build', type: 'forum', noPosts: true, special: 'builds_it' },
       { name: '🧠┃strategy', type: 'text' },
       { name: '🗺️┃map-and-objectives', type: 'text' },
       { name: '❓┃newcomer-questions', type: 'text' },
@@ -76,7 +80,7 @@ const categories = [
   {
     name: '🐺 THE HUNT', vis: 'member',
     channels: [
-      { name: '🔎┃looking-for-group', type: 'text' },
+      { name: '🔎┃looking-for-group', type: 'text', special: 'lfg' },
       { name: '🏆┃ranked-lfg', type: 'text', special: 'lfg_ranked' },
       { name: '🎲┃casual-lfg', type: 'text', special: 'lfg_casual' },
     ],
@@ -86,12 +90,13 @@ const categories = [
     channels: [
       { name: '➕ Create Room', type: 'voice', special: 'create' },
       { name: '🟢 Lobby', type: 'voice' },
-      { name: '🏆 Ranked I (6)', type: 'voice', limit: 6 },
-      { name: '🏆 Ranked II (6)', type: 'voice', limit: 6 },
-      { name: '🎲 Casual I (6)', type: 'voice', limit: 6 },
-      { name: '🎲 Casual II (6)', type: 'voice', limit: 6 },
-      { name: '👥 Duo (2)', type: 'voice', limit: 2 },
-      { name: '👥 Trio (3)', type: 'voice', limit: 3 },
+      // Match rooms: the bot keeps exactly one empty room per group (see features/voice.js)
+      { name: '🏆 Ranked 1 (6)', type: 'voice', limit: 6 },
+      { name: '🏆 Ranked 2 (6)', type: 'voice', limit: 6 },
+      { name: '🎲 Casual 1 (6)', type: 'voice', limit: 6 },
+      { name: '🎲 Casual 2 (6)', type: 'voice', limit: 6 },
+      { name: '👥 Duo 1 (2)', type: 'voice', limit: 2 },
+      { name: '👥 Trio 1 (3)', type: 'voice', limit: 3 },
       { name: '🌙 AFK', type: 'voice' },
     ],
   },

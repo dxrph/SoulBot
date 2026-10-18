@@ -1,6 +1,7 @@
 const features = [
   require('./verify'),
   require('./roles'),
+  require('./rules'),
   require('./voice'),
   require('./say'),
   require('./modlog'),
@@ -8,6 +9,7 @@ const features = [
   require('./tickets'),
   require('./lfg'),
   require('./patches'),
+  require('./guides'),
 ];
 
 module.exports = {

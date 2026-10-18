@@ -6,14 +6,19 @@ Discord bot that builds and runs a Deadlock community server.
 - `/setup-deadlock` wipes the server and rebuilds roles + channels (owner only, with confirmation)
 - `/add-tools` adds missing bot channels/panels without deleting anything
 - Verify button gives **Soulbound**, then posts a welcome message
-- Self-assign menus for rank, region and "Hunting for Party"
+- Pretty `get-roles` panel: menus for rank, region, party pings and one role per hero ("mains", up to 5 per class)
+- Styled rules panel (English + short Italian version)
 - Join-to-create voice rooms (`➕ Create Room`)
 - `📡┃say` relay: write `#channel message` and the bot posts it there
 - Mod log: joins, leaves, kicks, bans, deleted/edited messages
 - Anti-spam (auto timeout) and anti-raid (lockdown kicks on mass joins)
 - Ticket button that opens a private channel with staff
-- `/lfg` party cards with Join/Leave/Close buttons
-- Patch notes: official Valve posts from the Steam news API, every 15 min
+- Looking for group: guided UI (button + menus + note) or just write `ranked archon need 2` and the bot posts a party card; `/lfg` also works
+- Self-balancing match rooms: Ranked, Casual, Duo and Trio always keep exactly one empty room (new ones appear, extra empty ones disappear)
+- `/refresh-panels` reposts all panels after a design change
+- Patch notes: official Valve posts from the Steam news API, every 15 min, with images
+- Italian patch notes (`📰┃patch-notes-ita`): same posts, auto-translated
+- Hero and build forums in English and Italian (`/sync-guides`, refreshed every 12 h): one post per hero, data from the public Deadlock API in the game's own localization
 
 ## Discord setup
 1. Developer Portal → New Application → **Bot** → Reset Token.
@@ -34,6 +39,13 @@ npm start
 3. Variables → add `DISCORD_TOKEN`.
 4. Railway runs `npm start` by itself. The bot keeps no local state, so no volume is needed.
 Stop the local bot while Railway is running, or you get double replies.
+
+## Optional variables
+- `ANTHROPIC_API_KEY`: better Italian translation of patch notes (game terms kept in English). Without it the free Google endpoint is used.
+- `TRANSLATE_MODEL`: Claude model for translation (default `claude-haiku-5-5`).
+
+## Forums need Community
+The hero/build forums only exist on servers with **Community** enabled (Server Settings → Enable Community). Enable it, then run `/add-tools` and `/sync-guides`.
 
 ## Customize
 Names, colors and channels are all in `src/template.js`.
