@@ -5,6 +5,7 @@ Discord bot that builds and runs a Deadlock community server.
 ## Features
 - `/setup-deadlock` wipes the server and rebuilds roles + channels (owner only, with confirmation)
 - `/add-tools` adds missing bot channels/panels without deleting anything
+- Game invite requests (`🎟️┃game-invite`): players without access request an invite with their Steam profile, a verified member claims it and sends it through Steam
 - Verify button gives **Soulbound**, then posts a welcome message
 - Pretty `get-roles` panel: menus for rank, region, party pings and one role per hero ("mains", up to 5 per class)
 - Styled rules panel (English + short Italian version)

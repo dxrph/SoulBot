@@ -7,6 +7,7 @@ const features = [
   require('./modlog'),
   require('./security'),
   require('./tickets'),
+  require('./gameinvite'),
   require('./lfg'),
   require('./patches'),
   require('./guides'),

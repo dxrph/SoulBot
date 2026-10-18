@@ -44,6 +44,7 @@ const categories = [
     channels: [
       { name: '✅┃verify', type: 'text', readOnly: true, special: 'verify' },
       { name: '🚪┃welcome', type: 'text', readOnly: true, special: 'welcome' },
+      { name: '🎟️┃game-invite', type: 'text', readOnly: true, special: 'gameinvite' },
       { name: '📜┃rules', type: 'text', readOnly: true, special: 'rules' },
       { name: '📢┃announcements', type: 'text', readOnly: true },
       { name: '🎭┃get-roles', type: 'text', readOnly: true, special: 'roles' },

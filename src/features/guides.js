@@ -221,6 +221,7 @@ async function setupForum(guild, forum, kind, lang, heroes) {
   }
 
   // Guidelines (topic), default reaction and sort order
+  if (forum.defaultAutoArchiveDuration !== 10080) await forum.setDefaultAutoArchiveDuration(10080).catch(() => {});
   if (forum.topic !== text.topic) await forum.setTopic(text.topic).catch(console.error);
   if (forum.defaultReactionEmoji?.name !== FORUM_TEXT[kind].emoji) {
     await forum.setDefaultReactionEmoji({ id: null, name: FORUM_TEXT[kind].emoji }).catch(console.error);
@@ -238,7 +239,10 @@ async function ensureGuidePost(forum, threads, kind, lang) {
   const name = GUIDE_POST[lang];
   await upsertPost(forum, threads, name, [embed]);
   const thread = threads.get(name);
-  if (thread && !thread.flags.has(ChannelFlags.Pinned)) await thread.pin('Guide post').catch((e) => console.warn('pin', e.message));
+  if (thread && !thread.flags.has(ChannelFlags.Pinned)) {
+    if (thread.archived) await thread.setArchived(false).catch(() => {});
+    await thread.pin('Guide post').catch((e) => console.warn('pin', e.message));
+  }
 }
 
 // Creates the post, or refreshes its first message when the content changed
@@ -248,7 +252,8 @@ async function upsertPost(forum, threads, name, embeds, tagNames = []) {
     const first = await thread.fetchStarterMessage().catch(() => null);
     if (!first || first.author.id !== forum.client.user.id) return 'skipped';
     if (signature(first.embeds) === signature(embeds)) return 'same';
-    await first.edit({ embeds }).catch(console.error);
+    if (thread.archived) await thread.setArchived(false, 'Refresh guide post'); // Discord refuses edits in archived posts
+    await first.edit({ embeds });
     return 'updated';
   }
   const appliedTags = forum.availableTags.filter((t) => tagNames.includes(t.name)).map((t) => t.id);
@@ -271,7 +276,7 @@ async function syncLang(guild, lang) {
     .sort((a, b) => a.name.localeCompare(b.name));
   const byClass = new Map(items.map((i) => [i.class_name, i]));
   const byId = new Map(items.map((i) => [i.id, i]));
-  const stats = { created: 0, updated: 0, same: 0, skipped: 0 };
+  const stats = { created: 0, updated: 0, same: 0, skipped: 0, failed: 0 };
   const count = (r) => { stats[r] = (stats[r] ?? 0) + 1; };
 
   if (heroesForum?.type === ChannelType.GuildForum) {
@@ -281,7 +286,7 @@ async function syncLang(guild, lang) {
     await ensureGuidePost(heroesForum, threads, 'heroes', lang).catch((e) => console.error('guide post', e.message));
     // newest-first sort: creating Z..A makes the list read A..Z
     for (const h of [...heroes].reverse()) {
-      count(await upsertPost(heroesForum, threads, h.name, heroEmbeds(h, byClass, lang), [typeName(h)]).catch((e) => { console.error(h.name, e.message); return 'skipped'; }));
+      count(await upsertPost(heroesForum, threads, h.name, heroEmbeds(h, byClass, lang), [typeName(h)]).catch((e) => { console.error('hero post', h.name, e.message); return 'failed'; }));
     }
   }
 
@@ -299,8 +304,8 @@ async function syncLang(guild, lang) {
           : [new EmbedBuilder().setColor(color).setTitle(h.name).setDescription(L[lang].noBuilds)];
         count(await upsertPost(buildsForum, threads, h.name, embeds, [typeName(h)]));
       } catch (e) {
-        console.error('builds', h.name, e.message);
-        count('skipped');
+        console.error('build post', h.name, e.message);
+        count('failed');
       }
     }
   }
@@ -308,21 +313,37 @@ async function syncLang(guild, lang) {
 }
 
 let running = false;
+
+// Returns { report, incomplete } or null when a sync is already running.
+// incomplete = some posts failed or a language errored, so the caller should retry soon.
 async function syncAll(client) {
   if (running) return null;
   running = true;
   const report = [];
+  let incomplete = false;
   try {
     for (const guild of client.guilds.cache.values()) {
       for (const lang of Object.keys(LANGS)) {
-        const s = await syncLang(guild, lang).catch((e) => { console.error('guides', lang, e.message); return null; });
-        if (s) report.push(`${lang.toUpperCase()}: ${s.created} new, ${s.updated} updated, ${s.same} unchanged`);
+        let stats;
+        try {
+          stats = await syncLang(guild, lang);
+        } catch (e) {
+          console.error('guides', lang, e.message);
+          report.push(`${lang.toUpperCase()}: ERROR ${e.message}`);
+          incomplete = true;
+          continue;
+        }
+        if (!stats) continue;
+        if (stats.failed) incomplete = true;
+        const line = `${lang.toUpperCase()}: ${stats.created} new, ${stats.updated} updated, ${stats.same} unchanged${stats.failed ? `, ${stats.failed} FAILED` : ''}`;
+        console.log('guides', line);
+        report.push(line);
       }
     }
   } finally {
     running = false;
   }
-  return report;
+  return { report, incomplete };
 }
 
 const commands = [
@@ -334,7 +355,12 @@ const commands = [
 
 function init(client) {
   client.once('clientReady', () => {
-    const run = () => syncAll(client).catch(console.error);
+    // A restart or an error can cut a run short: retry every few minutes (max 6 times) until it completes
+    let retries = 0;
+    const run = async () => {
+      const res = await syncAll(client).catch((e) => { console.error(e); return { incomplete: true }; });
+      if (res?.incomplete && retries < 6) { retries += 1; setTimeout(run, 3 * 60_000).unref(); } else retries = 0;
+    };
     setTimeout(run, 45_000);
     setInterval(run, REFRESH_MS).unref();
   });
@@ -345,8 +371,10 @@ function init(client) {
       if (running) return await i.reply({ content: 'A sync is already running. Try again in a few minutes.', flags: MessageFlags.Ephemeral });
       await i.reply({ content: '⏳ Syncing heroes and builds (a few minutes the first time)...', flags: MessageFlags.Ephemeral });
       client.emit('patchesCheck');
-      const report = await syncAll(client);
-      await i.editReply(report?.length ? `✅ Done.\n${report.join('\n')}` : '⚠️ No hero/build forums found. Run /add-tools first.');
+      const res = await syncAll(client);
+      await i.editReply(res?.report.length
+        ? `${res.incomplete ? '⚠️ Finished with errors, the bot will retry in a few minutes.' : '✅ Done.'}\n${res.report.join('\n')}`
+        : '⚠️ No hero/build forums found. Run /add-tools first.');
     } catch (err) {
       console.error(err);
       await i.editReply(`❌ ${err.message}`).catch(() => {});
