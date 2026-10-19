@@ -1,6 +1,7 @@
 const features = [
   require('./verify'),
   require('./roles'),
+  require('./rankrequest'),
   require('./rules'),
   require('./voice'),
   require('./say'),
