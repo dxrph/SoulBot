@@ -4,6 +4,7 @@ const {
 const { roles, categories } = require('./template');
 const { roleMap, channelByKey, mergeOw, specialNames } = require('./util');
 const { panels } = require('./features');
+const { EVERYONE_PERMS, ensureEveryoneCanStream } = require('./permissions');
 
 const pending = new Map(); // guildId -> userId who requested the wipe
 
@@ -80,12 +81,13 @@ async function addTools(i) {
     await i.guild.channels.fetch();
     const R = roleMap(i.guild);
     if (!R.player) throw new Error('Soulbound role not found. Run /setup-deadlock first.');
+    const streamFixed = await ensureEveryoneCanStream(i.guild);
     const failed = await buildCategories(i.guild, R, true);
     await ensurePanels(i.guild);
     i.client.emit('patchesCheck');
     await i.editReply(failed.length
       ? `⚠️ Done, but these forums could not be created: ${failed.join(', ')}. Enable **Community** in Server Settings, then run /add-tools again.`
-      : '✅ Tool channels and panels are ready. Run /sync-guides to fill the hero and build forums.');
+      : `✅ Tool channels and panels are ready.${streamFixed ? ' Screen sharing enabled for everyone.' : ''} Run /sync-guides to fill the hero and build forums.`);
   } catch (err) {
     console.error(err);
     await i.editReply(`❌ Failed: ${err.message}`);
@@ -130,8 +132,7 @@ async function build(guild) {
   const top = guild.members.me.roles.highest.position - 1;
   await guild.roles.setPositions(roles.map((d, idx) => ({ role: R[d.key].id, position: Math.max(1, top - idx) }))).catch(() => {});
 
-  await guild.roles.everyone.setPermissions([V.ViewChannel, V.ReadMessageHistory, V.AddReactions, V.Connect, V.Speak, V.UseVAD,
-    V.SendMessages, V.SendMessagesInThreads, V.EmbedLinks, V.AttachFiles, V.UseExternalEmojis, V.CreateInstantInvite, V.ChangeNickname]);
+  await guild.roles.everyone.setPermissions(EVERYONE_PERMS);
 
   const failed = await buildCategories(guild, R, false);
   await ensurePanels(guild);
