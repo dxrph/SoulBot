@@ -17,4 +17,5 @@ module.exports = {
   features,
   commands: features.flatMap((f) => f.commands ?? []),
   panels: Object.assign({}, ...features.map((f) => f.panels ?? {})),
+  isLegacyTitle: (title) => features.some((f) => f.isLegacyTitle?.(title)),
 };
