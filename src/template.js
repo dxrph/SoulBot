@@ -14,12 +14,12 @@ const roles = [
   { key: 'bot', name: '⚙️ Automatons', color: 0x95a5a6 },
 
   // Ranks (highest first)
-  { key: 'eternus', name: '🌌 Eternus', color: 0xff4d6d, hoist: true, group: 'rank' },
-  { key: 'ascendant', name: '🪽 Ascendant', color: 0xff8fa3, hoist: true, group: 'rank' },
-  { key: 'phantom', name: '👻 Phantom', color: 0xb388ff, hoist: true, group: 'rank' },
-  { key: 'oracle', name: '👁️ Oracle', color: 0x7c4dff, hoist: true, group: 'rank' },
-  { key: 'archon', name: '⚜️ Archon', color: 0x40c4ff, hoist: true, group: 'rank' },
-  { key: 'emissary', name: '🕯️ Emissary', color: 0x26c6da, hoist: true, group: 'rank' },
+  { key: 'eternus', name: '🌌 Eternus', color: 0xff4d6d, hoist: true, group: 'rank', verify: true },
+  { key: 'ascendant', name: '🪽 Ascendant', color: 0xff8fa3, hoist: true, group: 'rank', verify: true },
+  { key: 'phantom', name: '👻 Phantom', color: 0xb388ff, hoist: true, group: 'rank', verify: true },
+  { key: 'oracle', name: '👁️ Oracle', color: 0x7c4dff, hoist: true, group: 'rank', verify: true },
+  { key: 'archon', name: '⚜️ Archon', color: 0x40c4ff, hoist: true, group: 'rank', verify: true },
+  { key: 'emissary', name: '🕯️ Emissary', color: 0x26c6da, hoist: true, group: 'rank', verify: true },
   { key: 'ritualist', name: '🩸 Ritualist', color: 0x4db6ac, hoist: true, group: 'rank' },
   { key: 'arcanist', name: '📖 Arcanist', color: 0x81c784, hoist: true, group: 'rank' },
   { key: 'alchemist', name: '⚗️ Alchemist', color: 0xaed581, hoist: true, group: 'rank' },
@@ -114,6 +114,7 @@ const categories = [
     name: '🛠️ THE WAR ROOM', vis: 'staff',
     channels: [
       { name: '📡┃say', type: 'text', special: 'say' },
+      { name: '📥┃rank-queue', type: 'text', special: 'rankqueue' },
       { name: '📋┃mod-log', type: 'text', special: 'modlog' },
       { name: '🛠️┃staff-chat', type: 'text' },
       { name: '🛠️ Staff Voice', type: 'voice' },

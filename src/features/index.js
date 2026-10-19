@@ -1,6 +1,7 @@
 const features = [
   require('./verify'),
   require('./roles'),
+  require('./rankrequest'),
   require('./rules'),
   require('./voice'),
   require('./say'),
@@ -17,4 +18,5 @@ module.exports = {
   features,
   commands: features.flatMap((f) => f.commands ?? []),
   panels: Object.assign({}, ...features.map((f) => f.panels ?? {})),
+  isLegacyTitle: (title) => features.some((f) => f.isLegacyTitle?.(title)),
 };

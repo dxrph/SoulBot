@@ -4,7 +4,8 @@
   "description": "Discord server manager bot for a Deadlock community",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "test": "node --test"
   },
   "type": "commonjs",
   "dependencies": {
