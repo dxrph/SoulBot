@@ -129,28 +129,28 @@ const FORUM_TEXT = {
       topic: 'Hero guides: one post per hero with abilities, base stats and lore.\n' +
         '• Reply inside a post to discuss that hero (tips, matchups, mains).\n' +
         '• Use the class tags to filter heroes. React with ⭐ to mark your favorites.\n' +
-        '• Stay on topic: builds go in Build Guides, looking for a team in looking-for-group.\n' +
+        '• Stay on topic: builds go in Build Guides, looking for a team in cerco-squadra.\n' +
         '• Be respectful. Posts are created and updated by the bot.',
       title: '📌 READ ME FIRST · HERO GUIDES',
       lines: [
         ['📖 What is this', 'One post per hero with abilities, base stats and lore, straight from the game data. The bot keeps them up to date.'],
         ['💬 How to use it', 'Open a hero and reply to share tips, matchups and tricks. Filter the list with the **class tags** at the top.'],
         ['⭐ Favorites', 'React to a post with ⭐ to show which heroes the community loves.'],
-        ['🧭 Stay on topic', 'Replies should be about that hero. Builds go in **Build Guides**, teams in **looking-for-group**.'],
+        ['🧭 Stay on topic', 'Replies should be about that hero. Builds go in **Build Guides**, teams in **cerco-squadra**.'],
       ],
     },
     it: {
       topic: 'Guide agli eroi: un post per eroe con abilità, statistiche base e storia.\n' +
         '• Rispondi dentro un post per parlare di quell\'eroe (consigli, matchup, main).\n' +
         '• Usa i tag delle classi per filtrare. Reagisci con ⭐ per segnare i tuoi preferiti.\n' +
-        '• Resta in tema: le build vanno in Guida Build, la ricerca squadra in looking-for-group.\n' +
+        '• Resta in tema: le build vanno in Guida Build, la ricerca squadra in cerco-squadra.\n' +
         '• Sii rispettoso. I post sono creati e aggiornati dal bot.',
       title: '📌 LEGGIMI · GUIDA AGLI EROI',
       lines: [
         ['📖 Cos\'è', 'Un post per eroe con abilità, statistiche base e storia, presi dai dati del gioco. Il bot li tiene aggiornati.'],
         ['💬 Come si usa', 'Apri un eroe e rispondi per condividere consigli, matchup e trucchi. Filtra la lista con i **tag delle classi** in alto.'],
         ['⭐ Preferiti', 'Reagisci a un post con ⭐ per mostrare quali eroi ama la community.'],
-        ['🧭 Resta in tema', 'Le risposte devono riguardare quell\'eroe. Le build vanno in **Guida Build**, i team in **looking-for-group**.'],
+        ['🧭 Resta in tema', 'Le risposte devono riguardare quell\'eroe. Le build vanno in **Guida Build**, i team in **cerco-squadra**.'],
       ],
     },
     emoji: '⭐',

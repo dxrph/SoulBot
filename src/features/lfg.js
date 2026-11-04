@@ -21,7 +21,7 @@ const commands = [
       .addChoices(...ranks.map((r) => ({ name: r.name, value: r.key }))))
     .addIntegerOption((o) => o.setName('size').setDescription('Total party size including you (default 6)').setMinValue(2).setMaxValue(6))
     .addStringOption((o) => o.setName('note').setDescription('Hero, playstyle, schedule...').setMaxLength(200))
-    .addBooleanOption((o) => o.setName('ping').setDescription('Ping Hunting for Party')),
+    .addBooleanOption((o) => o.setName('ping').setDescription('Ping Cerco Squadra')),
 ].map((c) => c.toJSON());
 
 // ---- the party card -------------------------------------------------------------------------
@@ -172,7 +172,7 @@ function renderDraft(d) {
         `**Rank** · ${rankLabel(d.rank)}\n` +
         `**Party** · ${size[d.size]}\n` +
         `**Note** · ${d.note || '*none*'}\n` +
-        `**Ping** · ${d.ping ? '🔔 Hunting for Party' : 'off'}\n${LINE}`,
+        `**Ping** · ${d.ping ? '🔔 Cerco Squadra' : 'off'}\n${LINE}`,
       )],
     components: [
       new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('lfgui:mode').setPlaceholder('Mode').addOptions(

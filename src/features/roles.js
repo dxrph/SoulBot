@@ -32,7 +32,7 @@ const sectionButtons = () => row(
   new ButtonBuilder().setCustomId('profile:rank').setLabel('Rank').setEmoji('⚔️').setStyle(ButtonStyle.Primary),
   new ButtonBuilder().setCustomId('profile:region').setLabel('Region').setEmoji('🌍').setStyle(ButtonStyle.Secondary),
   new ButtonBuilder().setCustomId('profile:heroes').setLabel('Heroes').setEmoji('🦸').setStyle(ButtonStyle.Secondary),
-  new ButtonBuilder().setCustomId('profile:ping').setLabel('Pings').setEmoji('🐺').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('profile:ping').setLabel('Pings').setEmoji('🔔').setStyle(ButtonStyle.Secondary),
 );
 
 function menu(customId, placeholder, options, min, max) {
@@ -50,8 +50,8 @@ function groupSection(group, member) {
       placeholder: '⚔️ Choose your rank', min: 1, max: 1 },
     region: { text: 'Find teammates who share your time zone. You can pick more than one.',
       placeholder: '🌍 Choose your region(s)', min: 0, max: 3 },
-    extra: { text: 'Pick **Hunting for Party** to be pinged when someone needs a teammate. Pick nothing to turn it off.',
-      placeholder: '🐺 Party pings', min: 0, max: 1 },
+    extra: { text: 'Scegli **Notifiche Live** per il ping quando vado in live, **Cerco Squadra** per il ping quando qualcuno cerca compagni. Togli tutto per disattivarli.',
+      placeholder: '🔔 Notifiche', min: 0, max: 2 },
   }[group];
   return { content: copy.text, embeds: [], components: [menu(`roles:${group}`, copy.placeholder, options, copy.min, copy.max)] };
 }
@@ -85,7 +85,7 @@ async function overview(member) {
     mains = member.roles.cache.filter((r) => heroes.includes(r.name)).map((r) => r.name).join(', ') || '—';
   } catch { mains = 'unavailable'; }
   const embed = new EmbedBuilder().setColor(0x9b59b6).setTitle('👤 Your profile').setDescription(
-    `**⚔️ Rank** · ${names('rank')}\n**🌍 Region** · ${names('region')}\n**🦸 Mains** · ${mains}\n**🐺 Pings** · ${names('extra')}`);
+    `**⚔️ Rank** · ${names('rank')}\n**🌍 Region** · ${names('region')}\n**🦸 Mains** · ${mains}\n**🔔 Pings** · ${names('extra')}`);
   return { content: '', embeds: [embed], components: [sectionButtons()] };
 }
 
@@ -100,7 +100,7 @@ const panels = {
         .setDescription(
           `Shape how the server sees you.\n${LINE}\n` +
           'Press a button: **Rank**, **Region**, **Heroes** or **Pings**. Each one opens a private menu only you can see.\n' +
-          `${LINE}\nChange it any time, nothing is permanent. You can also type \`/profilo\` anywhere.`,
+          `${LINE}\n🔴 In **Pings** attivi le notifiche quando vado in live.\nChange it any time, nothing is permanent. You can also type \`/profilo\` anywhere.`,
         )],
       components: [sectionButtons()],
     };

@@ -1,17 +1,37 @@
-// Deadlock server layout: roles and channels are consistent with each other.
-// Edit names, colors and channels here only.
+// ONYZUK4 community server: the Discord home of twitch.tv/onyzuk4.
+// Edit names, colors, channels and social links here only.
 //
 // role.group  -> 'rank' | 'region' | 'extra': shown in the self-assign menus of the roles channel
 // channel.special -> channel used by a bot feature (looked up by exact name, so keep names in sync)
+// old -> previous name(s): /add-tools renames an existing role, category or channel instead of making a copy
+
+// The streamer. Leave a link empty ('') to hide it from the social panel.
+const streamer = {
+  name: 'ONYZUK4',
+  twitch: 'onyzuk4', // Twitch login: live alerts and /live use it
+  motto: 'Egoista. Manca poco al Radiant: credi in me anche tu.',
+  color: 0xe11d2a, // red of the channel banner
+  links: {
+    twitch: 'https://twitch.tv/onyzuk4',
+    tiktok: process.env.TIKTOK_URL ?? '',
+    instagram: process.env.INSTAGRAM_URL ?? '',
+    youtube: process.env.YOUTUBE_URL ?? '',
+    x: process.env.X_URL ?? '',
+  },
+};
 
 const roles = [
   // Staff
-  { key: 'owner', name: '👑 The Hidden King', color: 0xf1c40f, hoist: true, admin: true },
-  { key: 'admin', name: '🔱 Hand of the Patron', color: 0xe74c3c, hoist: true, admin: true },
-  { key: 'mod', name: '⚔️ Wardens', color: 0xe67e22, hoist: true,
+  { key: 'owner', name: '👑 ONYZUK4', color: 0xe11d2a, hoist: true, admin: true, old: ['👑 The Hidden King'] },
+  { key: 'admin', name: '🩸 Braccio Destro', color: 0xb71c1c, hoist: true, admin: true, old: ['🔱 Hand of the Patron'] },
+  { key: 'mod', name: '🛡️ Guardiani', color: 0xff5252, hoist: true, old: ['⚔️ Wardens'],
     perms: ['KickMembers', 'BanMembers', 'ManageMessages', 'ModerateMembers', 'MoveMembers', 'MuteMembers', 'DeafenMembers'] },
-  { key: 'coach', name: '🔮 Sage Mentors', color: 0x9b59b6, hoist: true },
-  { key: 'bot', name: '⚙️ Automatons', color: 0x95a5a6 },
+  { key: 'coach', name: '🎓 Maestri', color: 0x9b59b6, hoist: true, old: ['🔮 Sage Mentors'] },
+  { key: 'bot', name: '⚙️ Bot', color: 0x95a5a6, old: ['⚙️ Automatons'] },
+
+  // Supporters of the channel (given by hand or by a Twitch-link bot)
+  { key: 'vip', name: '💎 VIP della Live', color: 0xff4081, hoist: true },
+  { key: 'sub', name: '💜 Sub', color: 0x9146ff, hoist: true },
 
   // Ranks (highest first)
   { key: 'eternus', name: '🌌 Eternus', color: 0xff4d6d, hoist: true, group: 'rank', verify: true },
@@ -32,61 +52,73 @@ const roles = [
   { key: 'asia', name: '🏯 Far East (Asia)', color: 0xe91e63, group: 'region' },
 
   // Base and utility
-  { key: 'player', name: '🔥 Soulbound', color: 0x1abc9c },
-  { key: 'lfg', name: '🐺 Hunting for Party', color: 0xf39c12, group: 'extra' },
-  { key: 'muted', name: '🔇 Silenced by the Void', color: 0x607d8b },
+  { key: 'player', name: '🔥 Egoisti', color: 0xff6b6b, old: ['🔥 Soulbound'] },
+  { key: 'live', name: '🔴 Notifiche Live', color: 0xe11d2a, group: 'extra' },
+  { key: 'lfg', name: '🐺 Cerco Squadra', color: 0xf39c12, group: 'extra', old: ['🐺 Hunting for Party'] },
+  { key: 'muted', name: '🔇 Silenziato', color: 0x607d8b, old: ['🔇 Silenced by the Void'] },
 ];
 
-// vis: 'public' = everyone, 'member' = Soulbound only, 'staff' = staff only
+// vis: 'public' = everyone, 'member' = Egoisti only, 'staff' = staff only
 const categories = [
   {
-    name: '📌 THE GATE', vis: 'public',
+    name: '🚪 L\'INGRESSO', vis: 'public', old: ['📌 THE GATE'],
     channels: [
-      { name: '✅┃verify', type: 'text', readOnly: true, special: 'verify' },
-      { name: '🚪┃welcome', type: 'text', readOnly: true, special: 'welcome' },
-      { name: '🎟️┃game-invite', type: 'text', readOnly: true, special: 'gameinvite' },
-      { name: '📜┃rules', type: 'text', readOnly: true, special: 'rules' },
-      { name: '📢┃announcements', type: 'text', readOnly: true },
-      { name: '🎭┃get-roles', type: 'text', readOnly: true, special: 'roles' },
-      { name: '🎫┃support', type: 'text', readOnly: true, special: 'support' },
-      { name: '👋┃introductions', type: 'text' },
+      { name: '✅┃verifica', type: 'text', readOnly: true, special: 'verify', old: ['✅┃verify'] },
+      { name: '👋┃benvenuti', type: 'text', readOnly: true, special: 'welcome', old: ['🚪┃welcome'] },
+      { name: '📜┃regole', type: 'text', readOnly: true, special: 'rules', old: ['📜┃rules'] },
+      { name: '📢┃annunci', type: 'text', readOnly: true, old: ['📢┃announcements'] },
+      { name: '🎭┃ruoli', type: 'text', readOnly: true, special: 'roles', old: ['🎭┃get-roles'] },
+      { name: '🎫┃supporto', type: 'text', readOnly: true, special: 'support', old: ['🎫┃support'] },
     ],
   },
   {
-    name: '💬 THE TAVERN', vis: 'member',
+    // Public on purpose: people arriving from Twitch see the stream and the socials before verifying
+    name: '🔴 ONYZUK4 LIVE', vis: 'public',
     channels: [
-      { name: '💬┃general', type: 'text' },
-      { name: '😂┃memes', type: 'text' },
-      { name: '🎬┃clips-and-highlights', type: 'text' },
-      { name: '🤖┃bot-commands', type: 'text' },
-      { name: '🗣️ Lounge', type: 'voice' },
-      { name: '🎵 Music', type: 'voice' },
+      { name: '🔴┃live-ora', type: 'text', readOnly: true, special: 'live' },
+      { name: '🔗┃social', type: 'text', readOnly: true, special: 'socials' },
+      { name: '📅┃programma', type: 'text', readOnly: true, special: 'schedule' },
     ],
   },
   {
-    name: '🔥 THE ARCHIVES', vis: 'member',
+    name: '💬 LA CHAT', vis: 'member', old: ['💬 THE TAVERN'],
+    channels: [
+      { name: '💬┃generale', type: 'text', old: ['💬┃general'] },
+      { name: '🙋┃presentati', type: 'text', old: ['👋┃introductions'] },
+      { name: '🎬┃clip-della-live', type: 'text', old: ['🎬┃clips-and-highlights'] },
+      { name: '💡┃idee-per-le-live', type: 'text' },
+      { name: '😂┃meme', type: 'text', old: ['😂┃memes'] },
+      { name: '🤖┃comandi-bot', type: 'text', old: ['🤖┃bot-commands'] },
+      { name: '📺 Guardiamo la Live', type: 'voice' },
+      { name: '🗣️ Chiacchiere', type: 'voice', old: ['🗣️ Lounge'] },
+      { name: '🎵 Musica', type: 'voice', old: ['🎵 Music'] },
+    ],
+  },
+  {
+    name: '🎮 DEADLOCK', vis: 'member', old: ['🔥 THE ARCHIVES'],
     channels: [
       { name: '📰┃patch-notes', type: 'text', readOnly: true, special: 'patches' },
       { name: '📰┃patch-notes-ita', type: 'text', readOnly: true, special: 'patches_it' },
+      { name: '🎟️┃invito-al-gioco', type: 'text', readOnly: true, special: 'gameinvite', old: ['🎟️┃game-invite'] },
       // Forums filled by the bot (one post per hero). noPosts: members reply inside posts, only staff/bot create them
       { name: '🦸┃hero-guides', type: 'forum', noPosts: true, special: 'heroes_en' },
       { name: '🛒┃build-guides', type: 'forum', noPosts: true, special: 'builds_en' },
       { name: '🇮🇹┃guida-eroi', type: 'forum', noPosts: true, special: 'heroes_it' },
       { name: '🇮🇹┃guida-build', type: 'forum', noPosts: true, special: 'builds_it' },
-      { name: '🧠┃strategy', type: 'text' },
-      { name: '🗺️┃map-and-objectives', type: 'text' },
-      { name: '❓┃newcomer-questions', type: 'text' },
+      { name: '🧠┃strategie', type: 'text', old: ['🧠┃strategy'] },
+      { name: '❓┃domande-nuovi', type: 'text', old: ['❓┃newcomer-questions'] },
     ],
   },
   {
-    name: '🐺 THE HUNT', vis: 'member',
+    name: '🐺 CERCO SQUADRA', vis: 'member', old: ['🐺 THE HUNT'],
     channels: [
-      { name: '🔎┃looking-for-group', type: 'text', special: 'lfg' },
+      { name: '🔎┃cerco-squadra', type: 'text', special: 'lfg', old: ['🔎┃looking-for-group'] },
       { name: '🏆┃ranked-lfg', type: 'text', special: 'lfg_ranked' },
       { name: '🎲┃casual-lfg', type: 'text', special: 'lfg_casual' },
     ],
   },
   {
+    // Untouched: same voice rooms as before
     name: '⚔️ THE BATTLEFIELD', vis: 'member',
     channels: [
       { name: '➕ Create Room', type: 'voice', special: 'create' },
@@ -102,16 +134,16 @@ const categories = [
     ],
   },
   {
-    name: '🔮 THE SANCTUM', vis: 'member', coach: true,
+    name: '🎓 SCUOLA DELL\'EGO', vis: 'member', coach: true, old: ['🔮 THE SANCTUM'],
     channels: [
-      { name: '🔮┃coaching-requests', type: 'text' },
-      { name: '📹┃replay-review', type: 'text' },
-      { name: '🔮 Sanctum I', type: 'voice' },
-      { name: '🔮 Sanctum II', type: 'voice' },
+      { name: '🎓┃richieste-coaching', type: 'text', old: ['🔮┃coaching-requests'] },
+      { name: '📹┃analisi-replay', type: 'text', old: ['📹┃replay-review'] },
+      { name: '🎓 Aula 1', type: 'voice', old: ['🔮 Sanctum I'] },
+      { name: '🎓 Aula 2', type: 'voice', old: ['🔮 Sanctum II'] },
     ],
   },
   {
-    name: '🛠️ THE WAR ROOM', vis: 'staff',
+    name: '🛠️ STAFF', vis: 'staff', old: ['🛠️ THE WAR ROOM'],
     channels: [
       { name: '📡┃say', type: 'text', special: 'say' },
       { name: '📥┃rank-queue', type: 'text', special: 'rankqueue' },
@@ -124,4 +156,4 @@ const categories = [
   { name: '🎫 TICKETS', vis: 'staff', channels: [] },
 ];
 
-module.exports = { roles, categories };
+module.exports = { streamer, roles, categories };

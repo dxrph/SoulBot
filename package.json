@@ -1,7 +1,7 @@
 {
-  "name": "deadlock-bot",
+  "name": "soulbot-onyzuk4",
   "version": "1.0.0",
-  "description": "Discord server manager bot for a Deadlock community",
+  "description": "Discord bot for the ONYZUK4 Twitch community",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

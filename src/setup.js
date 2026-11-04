@@ -10,23 +10,23 @@ const pending = new Map(); // guildId -> userId who requested the wipe
 
 const commands = [
   new SlashCommandBuilder()
-    .setName('setup-deadlock')
-    .setDescription('DELETES everything in this server and rebuilds it for Deadlock')
+    .setName('setup-server')
+    .setDescription('DELETES everything in this server and rebuilds the ONYZUK4 community')
     .setDefaultMemberPermissions(V.Administrator).setDMPermission(false),
   new SlashCommandBuilder()
     .setName('add-tools')
-    .setDescription('Adds missing bot channels and panels without deleting anything')
+    .setDescription('Updates the server to the new layout: renames old items, adds what is missing, deletes nothing')
     .setDefaultMemberPermissions(V.Administrator).setDMPermission(false),
   new SlashCommandBuilder()
     .setName('refresh-panels')
-    .setDescription('Reposts the verify, roles, rules, support and LFG panels with the latest design')
+    .setDescription('Reposts the verify, roles, rules, live, social and LFG panels with the latest design')
     .setDefaultMemberPermissions(V.Administrator).setDMPermission(false),
 ].map((c) => c.toJSON());
 
 function init(client) {
   client.on('interactionCreate', async (i) => {
     try {
-      if (i.isChatInputCommand() && i.commandName === 'setup-deadlock') return await askConfirm(i);
+      if (i.isChatInputCommand() && i.commandName === 'setup-server') return await askConfirm(i);
       if (i.isChatInputCommand() && i.commandName === 'add-tools') return await addTools(i);
       if (i.isChatInputCommand() && i.commandName === 'refresh-panels') return await refresh(i);
       if (i.isButton() && i.customId.startsWith('setup:')) return await handleWipeButton(i);
@@ -46,7 +46,7 @@ async function askConfirm(i) {
     new ButtonBuilder().setCustomId('setup:no').setLabel('Cancel').setStyle(ButtonStyle.Secondary),
   );
   await i.reply({
-    content: '⚠️ This deletes **ALL channels and roles** (below the bot\'s role) and rebuilds the Deadlock layout. It cannot be undone.',
+    content: '⚠️ This deletes **ALL channels and roles** (below the bot\'s role) and rebuilds the ONYZUK4 layout. It cannot be undone.',
     components: [row],
     flags: MessageFlags.Ephemeral,
   });
@@ -64,7 +64,7 @@ async function handleWipeButton(i) {
     await wipe(i.guild);
     const failed = await build(i.guild);
     // The channel this ran in no longer exists, so reply through the interaction
-    await i.editReply({ content: '✅ Done. Give yourself 👑 The Hidden King and 🔥 Soulbound to see everything.' +
+    await i.editReply({ content: `✅ Done. Give yourself ${roles.find((r) => r.key === 'owner').name} and ${roles.find((r) => r.key === 'player').name} to see everything.` +
       (failed.length ? `
 ⚠️ Forums not created (${failed.join(', ')}): enable **Community** in Server Settings, then run /add-tools.` : '') });
   } catch (err) {
@@ -79,15 +79,16 @@ async function addTools(i) {
   try {
     await i.guild.roles.fetch();
     await i.guild.channels.fetch();
-    const R = roleMap(i.guild);
-    if (!R.player) throw new Error('Soulbound role not found. Run /setup-deadlock first.');
+    const renamed = await renameLegacy(i.guild);
+    const R = await ensureRoles(i.guild);
     const streamFixed = await ensureEveryoneCanStream(i.guild);
-    const failed = await buildCategories(i.guild, R, true);
+    const failed = await buildCategories(i.guild, R, false);
+    await orderCategories(i.guild);
     await ensurePanels(i.guild);
     i.client.emit('patchesCheck');
     await i.editReply(failed.length
       ? `⚠️ Done, but these forums could not be created: ${failed.join(', ')}. Enable **Community** in Server Settings, then run /add-tools again.`
-      : `✅ Tool channels and panels are ready.${streamFixed ? ' Screen sharing enabled for everyone.' : ''} Run /sync-guides to fill the hero and build forums.`);
+      : `✅ Server updated${renamed ? ` (${renamed} renamed)` : ''}.${streamFixed ? ' Screen sharing enabled for everyone.' : ''} Run /refresh-panels to repost the panels with the new design, and /sync-guides for the hero and build forums.`);
   } catch (err) {
     console.error(err);
     await i.editReply(`❌ Failed: ${err.message}`);
@@ -110,13 +111,13 @@ async function refresh(i) {
 async function wipe(guild) {
   await guild.channels.fetch();
   for (const ch of guild.channels.cache.values()) {
-    await ch.delete('Deadlock reset').catch((e) => console.warn('channel', ch.name, e.message));
+    await ch.delete('Server reset').catch((e) => console.warn('channel', ch.name, e.message));
   }
   await guild.roles.fetch();
   const me = guild.members.me;
   for (const r of guild.roles.cache.values()) {
     if (r.id === guild.id || r.managed || r.position >= me.roles.highest.position) continue;
-    await r.delete('Deadlock reset').catch((e) => console.warn('role', r.name, e.message));
+    await r.delete('Server reset').catch((e) => console.warn('role', r.name, e.message));
   }
 }
 
@@ -141,19 +142,12 @@ async function build(guild) {
 
 // onlySpecial: create only the missing channels used by bot features
 async function buildCategories(guild, R, onlySpecial) {
-  const everyone = guild.roles.everyone;
-  const staff = [R.owner, R.admin, R.mod];
   const failedForums = [];
 
   for (const cat of categories) {
     if (onlySpecial && !cat.channels.some((ch) => ch.special) && !cat.name.includes('TICKETS')) continue;
 
-    const catOw = [];
-    if (cat.vis === 'member' || cat.vis === 'staff') catOw.push({ id: everyone.id, deny: [V.ViewChannel] });
-    if (cat.vis === 'member') catOw.push({ id: R.player.id, allow: [V.ViewChannel] });
-    for (const s of staff) catOw.push({ id: s.id, allow: [V.ViewChannel, V.SendMessages, V.Connect, V.ManageMessages] });
-    if (cat.coach) catOw.push({ id: R.coach.id, allow: [V.ViewChannel, V.MoveMembers, V.MuteMembers] });
-    catOw.push({ id: R.muted.id, deny: [V.SendMessages, V.Speak, V.AddReactions] });
+    const catOw = categoryOw(guild, R, cat);
 
     let category = guild.channels.cache.find((ch) => ch.type === ChannelType.GuildCategory && ch.name === cat.name);
     category ??= await guild.channels.create({ name: cat.name, type: ChannelType.GuildCategory, permissionOverwrites: mergeOw(catOw) });
@@ -161,20 +155,12 @@ async function buildCategories(guild, R, onlySpecial) {
     for (const ch of cat.channels) {
       if (onlySpecial && !ch.special) continue;
       if (guild.channels.cache.some((x) => x.name === ch.name)) continue; // already there (possibly moved by the owner)
+      // Match rooms are added/removed by the voice balancer: one room of the group is enough
+      if (ch.limit && guild.channels.cache.some((x) => x.name.startsWith(ch.name.replace(/\d+ \(\d+\)$/, '')))) continue;
 
       const isVoice = ch.type === 'voice';
       const isForum = ch.type === 'forum';
-      const ow = [...catOw];
-      if (ch.readOnly) {
-        ow.push({ id: everyone.id, deny: [V.SendMessages, V.AddReactions] });
-        ow.push({ id: R.player.id, deny: [V.SendMessages] });
-        for (const s of staff) ow.push({ id: s.id, allow: [V.SendMessages] });
-      }
-      if (ch.noPosts) { // forum: everyone can reply in posts, nobody but staff/bot starts new ones
-        ow.push({ id: everyone.id, deny: [V.CreatePublicThreads, V.CreatePrivateThreads] });
-        ow.push({ id: R.player.id, deny: [V.CreatePublicThreads, V.CreatePrivateThreads] });
-        for (const s of staff) ow.push({ id: s.id, allow: [V.CreatePublicThreads] });
-      }
+      const ow = channelOw(guild, R, cat, ch);
       try {
         await guild.channels.create({
           name: ch.name,
@@ -190,6 +176,90 @@ async function buildCategories(guild, R, onlySpecial) {
     }
   }
   return failedForums;
+}
+
+// Permission overwrites of a category, from its visibility in the template
+function categoryOw(guild, R, cat) {
+  const everyone = guild.roles.everyone;
+  const ow = [];
+  if (cat.vis === 'member' || cat.vis === 'staff') ow.push({ id: everyone.id, deny: [V.ViewChannel] });
+  if (cat.vis === 'member') ow.push({ id: R.player.id, allow: [V.ViewChannel] });
+  for (const s of [R.owner, R.admin, R.mod]) ow.push({ id: s.id, allow: [V.ViewChannel, V.SendMessages, V.Connect, V.ManageMessages] });
+  if (cat.coach) ow.push({ id: R.coach.id, allow: [V.ViewChannel, V.MoveMembers, V.MuteMembers] });
+  ow.push({ id: R.muted.id, deny: [V.SendMessages, V.Speak, V.AddReactions] });
+  return ow;
+}
+
+// Category overwrites plus the channel's own rules (read-only, forum without new posts)
+function channelOw(guild, R, cat, ch) {
+  const everyone = guild.roles.everyone;
+  const staff = [R.owner, R.admin, R.mod];
+  const ow = categoryOw(guild, R, cat);
+  if (ch.readOnly) {
+    ow.push({ id: everyone.id, deny: [V.SendMessages, V.AddReactions] });
+    ow.push({ id: R.player.id, deny: [V.SendMessages] });
+    for (const s of staff) ow.push({ id: s.id, allow: [V.SendMessages] });
+  }
+  if (ch.noPosts) { // forum: everyone can reply in posts, nobody but staff/bot starts new ones
+    ow.push({ id: everyone.id, deny: [V.CreatePublicThreads, V.CreatePrivateThreads] });
+    ow.push({ id: R.player.id, deny: [V.CreatePublicThreads, V.CreatePrivateThreads] });
+    for (const s of staff) ow.push({ id: s.id, allow: [V.CreatePublicThreads] });
+  }
+  return mergeOw(ow);
+}
+
+// Roles, categories and channels from the old layout get their new name (members keep their roles).
+// A channel that changed category is moved there with that category's permissions.
+async function renameLegacy(guild) {
+  let count = 0;
+  const has = (list, name) => list.some((x) => x.name === name);
+  for (const def of roles) {
+    if (!def.old || has([...guild.roles.cache.values()], def.name)) continue;
+    const found = guild.roles.cache.find((r) => def.old.includes(r.name));
+    if (found) { await found.edit({ name: def.name, color: def.color }).catch(console.warn); count += 1; }
+  }
+  const R = roleMap(guild);
+  const ready = R.player && R.owner && R.admin && R.mod && R.coach && R.muted;
+  for (const cat of categories) {
+    let category = guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === cat.name);
+    if (!category && cat.old) {
+      category = guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && cat.old.includes(c.name));
+      if (category) { await category.setName(cat.name).catch(console.warn); count += 1; }
+    }
+    for (const ch of cat.channels) {
+      if (!ch.old || guild.channels.cache.some((x) => x.name === ch.name)) continue;
+      const found = guild.channels.cache.find((x) => ch.old.includes(x.name));
+      if (!found) continue;
+      const moved = category && found.parentId !== category.id;
+      await found.edit({
+        name: ch.name,
+        ...(moved ? { parent: category.id, ...(ready ? { permissionOverwrites: channelOw(guild, R, cat, ch) } : {}) } : {}),
+      }).catch(console.warn);
+      count += 1;
+    }
+  }
+  return count;
+}
+
+// Creates the template roles this server does not have yet (new ones like Live pings, VIP, Sub)
+async function ensureRoles(guild) {
+  await guild.roles.fetch();
+  const R = roleMap(guild);
+  for (const def of roles) {
+    if (R[def.key]) continue;
+    const perms = def.admin ? [V.Administrator] : (def.perms ?? []).map((p) => V[p]);
+    R[def.key] = await guild.roles.create({ name: def.name, color: def.color, hoist: !!def.hoist, permissions: perms });
+  }
+  return R;
+}
+
+// Puts the categories in template order (the live corner right below the entrance)
+async function orderCategories(guild) {
+  const list = categories
+    .map((cat) => guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === cat.name))
+    .filter(Boolean)
+    .map((channel, position) => ({ channel: channel.id, position }));
+  await guild.channels.setPositions(list).catch(console.warn);
 }
 
 // A panel is one message or a list of messages; the first embed title identifies it in the channel
@@ -232,4 +302,4 @@ async function refreshPanels(guild) {
   }
 }
 
-module.exports = { init, commands, specialNames };
+module.exports = { init, commands, specialNames, renameLegacy };
