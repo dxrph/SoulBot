@@ -1,7 +1,8 @@
 const {
-  EmbedBuilder, SlashCommandBuilder, ChannelType, ChannelFlags, SortOrderType, MessageFlags, PermissionFlagsBits: V,
+  EmbedBuilder, ChannelType, ChannelFlags, SortOrderType, MessageFlags, PermissionFlagsBits: V,
 } = require('discord.js');
 const { channelByKey, roleMap } = require('../util');
+const { guildSlash } = require('../slash');
 const { CLASSES } = require('../heroes');
 
 // Hero and build guides: one forum post per hero, filled from the public Deadlock API.
@@ -347,10 +348,8 @@ async function syncAll(client) {
 }
 
 const commands = [
-  new SlashCommandBuilder()
-    .setName('sync-guides')
-    .setDescription('Fill or refresh the hero and build forums now')
-    .setDefaultMemberPermissions(V.Administrator).setDMPermission(false),
+  guildSlash('sync-guides', 'Aggiorna i forum delle guide eroi e build')
+    .setDefaultMemberPermissions(V.Administrator),
 ].map((c) => c.toJSON());
 
 function init(client) {

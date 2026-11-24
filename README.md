@@ -7,7 +7,10 @@ Il bot del server Discord di **[ONYZUK4](https://twitch.tv/onyzuk4)**: il posto 
 ## 🔴 Live e social
 - **Notifiche live** in `🔴┃live-ora`: appena ONYZUK4 va in live su Twitch il bot pubblica titolo, gioco e anteprima, tagga chi ha **🔴 Notifiche Live** e segna il post come finito quando la live si chiude (controllo ogni 2 minuti, nessuna chiave Twitch richiesta)
 - `/live`: ONYZUK4 è in live adesso?
-- `/social`: tutti i link di ONYZUK4
+- `/social`: tutti i link di ONYZUK4 (Twitch, Kick, YouTube, Instagram, X)
+- `/sondaggio`: lo staff crea un sondaggio per la live
+- `/anime` e `/anime-off`: pannello “Anime della settimana” in `📅┃programma`
+- `/pulisci-eroi`: lo staff toglie i ruoli eroe non più usati dal gioco
 - Pannelli `🔗┃social` e `📅┃programma`
 - La sezione **🔴 ONYZUK4 LIVE** è pubblica: chi arriva da Twitch la vede subito, anche prima di entrare
 
@@ -21,7 +24,7 @@ Il bot del server Discord di **[ONYZUK4](https://twitch.tv/onyzuk4)**: il posto 
 
 ## 🎮 Giocare con ONYZUK4
 - **⚔️ THE BATTLEFIELD**: stanze vocali Ranked, Casual, Duo e Trio che restano sempre con esattamente una stanza vuota per tipo, più `➕ Create Room` per crearsi una stanza propria
-- **Cerco squadra**: scrivi per esempio `ranked archon need 2` e il bot crea la card del gruppo, oppure usa `/lfg`
+- **Cerco squadra**: scrivi per esempio `ranked oracle need 2` e il bot crea la card del gruppo, oppure usa `/lfg`
 - Rank verificati: da Emissary in su serve `/verifica-rank` con uno screenshot, e lo staff approva da `📥┃rank-queue`
 - Inviti al gioco (`🎟️┃invito-al-gioco`), patch notes ufficiali in inglese e tradotte in italiano, forum con le guide degli eroi e delle build (`/sync-guides`)
 - **🎓 Scuola dell'Ego**: richieste di coaching e analisi dei replay
@@ -59,7 +62,7 @@ npm start
 Spegni il bot in locale mentre gira su Railway, altrimenti ogni risposta arriva doppia.
 
 ## 🔧 Variabili facoltative
-- `TIKTOK_URL`, `INSTAGRAM_URL`, `YOUTUBE_URL`, `X_URL`: altri link nel pannello social (se sono vuoti non compaiono). Twitch c'è sempre.
+- `KICK_URL`, `TIKTOK_URL`, `INSTAGRAM_URL`, `YOUTUBE_URL`, `X_URL`: link nel pannello social. Se sono vuoti, Kick, YouTube, Instagram e X usano i link di default di ONYZUK4; TikTok compare solo se lo imposti. Twitch c'è sempre.
 - `ANTHROPIC_API_KEY`: traduzione delle patch notes più precisa (i termini del gioco restano in inglese). Senza, si usa il traduttore gratuito di Google.
 - `TRANSLATE_MODEL`: modello Claude per la traduzione (predefinito `claude-haiku-5-5`).
 

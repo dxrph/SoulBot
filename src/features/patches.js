@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { channelByKey } = require('../util');
 const { toItalian } = require('../translate');
+const { palette, withFooter } = require('../style');
 
 // Official Valve posts for Deadlock (app 1422450) from the public Steam news API
 const APP_ID = 1422450;
@@ -64,12 +65,13 @@ async function check(client) {
         }
         const images = imagesOf(n.contents).slice(0, 4);
         const main = new EmbedBuilder()
-          .setColor(0xe67e22)
+          .setColor(palette.accent)
           .setTitle(title.slice(0, 256))
           .setURL(urlOf(n))
           .setDescription(body.length > 3800 ? `${body.slice(0, 3800)}…` : body || null)
-          .setFooter({ text: italian ? 'Traduzione automatica · originale su Steam' : (n.author ? `by ${n.author}` : 'Deadlock') })
+          
           .setTimestamp(n.date * 1000);
+        withFooter(main, italian ? 'Traduzione automatica · originale su Steam' : (n.author ? `di ${n.author}` : 'Deadlock'));
         if (images[0]) main.setImage(images[0]);
         // Embeds sharing the same url are shown by Discord as one image gallery
         const extra = images.slice(1).map((img) => new EmbedBuilder().setURL(urlOf(n)).setImage(img));

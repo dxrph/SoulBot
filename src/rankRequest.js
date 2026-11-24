@@ -4,15 +4,15 @@ const { rankByKey } = require('./ranks');
 const encodeRequest = (userId, rankKey) => `${userId}:${rankKey}`;
 
 function decodeRequest(text) {
-  const m = /^(\d+):([a-z]+)$/.exec(text ?? '');
+  const m = /^(\d+):([a-z]+)/.exec((text ?? '').trim());
   return m ? { userId: m[1], rankKey: m[2] } : null;
 }
 
 function checkRequest({ rankKey, contentType, alreadyHasRank, pendingExists }) {
-  if (!rankByKey(rankKey)?.verify) return { ok: false, reason: 'That rank does not need verification: pick it in the roles panel.' };
-  if (!contentType?.startsWith('image/')) return { ok: false, reason: 'Attach a screenshot (an image), not another file type.' };
-  if (alreadyHasRank) return { ok: false, reason: 'You already have that rank.' };
-  if (pendingExists) return { ok: false, reason: 'You already have a pending request. Wait for staff to review it.' };
+  if (!rankByKey(rankKey)?.verify) return { ok: false, reason: 'Quel rank non serve verifica: sceglilo nel pannello ruoli.' };
+  if (!contentType?.startsWith('image/')) return { ok: false, reason: 'Allega uno screenshot (un\'immagine), non un altro tipo di file.' };
+  if (alreadyHasRank) return { ok: false, reason: 'Hai già quel rank.' };
+  if (pendingExists) return { ok: false, reason: 'Hai già una richiesta in attesa. Aspetta che lo staff la esamini.' };
   return { ok: true };
 }
 
