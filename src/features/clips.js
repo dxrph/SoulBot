@@ -82,31 +82,29 @@ async function postWeekly(guild, client) {
   await news.send({ content: `Complimenti <@${winner.author.id}>!`, embeds: [embed], allowedMentions: { users: [winner.author.id] } }).catch(console.error);
 }
 
-function init(client) {
-  client.on('messageCreate', async (m) => {
-    try {
-      if (!m.guild || m.author.bot) return;
-      const clips = channelByKey(m.guild, 'clips');
-      if (!clips || m.channelId !== clips.id) return;
-      if (!isClipMessage(m)) return;
-      await m.react(REACTION).catch(() => {});
-    } catch (err) {
-      console.error(err);
-    }
-  });
-
-  client.once('clientReady', () => {
-    let busy = false;
-    const run = async () => {
-      if (busy) return;
-      busy = true;
-      try {
-        for (const g of client.guilds.cache.values()) await postWeekly(g, client);
-      } catch (e) { console.error(e); } finally { busy = false; }
-    };
-    setTimeout(run, 20_000);
-    setInterval(run, CHECK_MS).unref();
-  });
+async function onMessage(m) {
+  try {
+    if (!m.guild || m.author.bot) return;
+    const clips = channelByKey(m.guild, 'clips');
+    if (!clips || m.channelId !== clips.id) return;
+    if (!isClipMessage(m)) return;
+    await m.react(REACTION).catch(() => {});
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-module.exports = { init };
+function onReady(client) {
+  let busy = false;
+  const run = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      for (const g of client.guilds.cache.values()) await postWeekly(g, client);
+    } catch (e) { console.error(e); } finally { busy = false; }
+  };
+  setTimeout(run, 20_000);
+  setInterval(run, CHECK_MS).unref();
+}
+
+module.exports = { onMessage, onReady };

@@ -37,4 +37,4 @@ const panels = {
   ],
 };
 
-module.exports = { panels, init() {} };
+module.exports = { panels };

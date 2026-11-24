@@ -59,28 +59,6 @@ function init(client) {
     for (const [k, arr] of history) if (!arr.some((e) => now - e.t < SPAM_WINDOW)) history.delete(k);
   }, 60_000).unref();
 
-  client.on('messageCreate', async (m) => {
-    try {
-      if (!m.guild || m.author.bot || !m.member || isStaff(m.member)) return;
-      const key = `${m.guildId}:${m.author.id}`;
-      const now = Date.now();
-      const arr = (history.get(key) ?? []).filter((e) => now - e.t < SPAM_WINDOW);
-      arr.push({ t: now, id: m.id, ch: m.channelId, c: m.content });
-      history.set(key, arr);
-
-      let reason = null;
-      if (arr.length >= SPAM_LIMIT) reason = `${arr.length} messaggi in ${SPAM_WINDOW / 1000}s`;
-      else if (m.content && arr.filter((e) => e.c === m.content).length >= DUP_LIMIT) reason = 'messaggio ripetuto';
-      else if (m.mentions.users.size + m.mentions.roles.size >= MENTION_LIMIT) reason = 'menzioni di massa';
-      if (!reason) return;
-
-      history.delete(key);
-      await punishSpam(m, arr, reason);
-    } catch (err) {
-      console.error(err);
-    }
-  });
-
   client.on('guildMemberAdd', async (member) => {
     try {
       if (member.user.bot) return;
@@ -115,22 +93,44 @@ function init(client) {
       console.error(err);
     }
   });
-
-  client.on('interactionCreate', async (i) => {
-    if (!i.isButton() || i.customId !== 'raid:unlock') return;
-    try {
-      if (!i.member.permissions.has(V.ModerateMembers) && !isStaff(i.member)) {
-        return i.reply({ content: 'Solo lo staff può terminare il lockdown.', flags: MessageFlags.Ephemeral });
-      }
-      const s = raidState(i.guildId);
-      s.until = 0;
-      s.joins = [];
-      await i.reply({ content: 'Lockdown terminato. I timeout già dati restano, puoi toglierli a mano se erano falsi positivi.', flags: MessageFlags.Ephemeral });
-      logEvent(i.guild, { title: 'Lockdown terminato', color: palette.ok, description: `Da <@${i.user.id}>` });
-    } catch (err) {
-      console.error(err);
-    }
-  });
 }
 
-module.exports = { init };
+async function onMessage(m) {
+  try {
+    if (!m.guild || m.author.bot || !m.member || isStaff(m.member)) return;
+    const key = `${m.guildId}:${m.author.id}`;
+    const now = Date.now();
+    const arr = (history.get(key) ?? []).filter((e) => now - e.t < SPAM_WINDOW);
+    arr.push({ t: now, id: m.id, ch: m.channelId, c: m.content });
+    history.set(key, arr);
+
+    let reason = null;
+    if (arr.length >= SPAM_LIMIT) reason = `${arr.length} messaggi in ${SPAM_WINDOW / 1000}s`;
+    else if (m.content && arr.filter((e) => e.c === m.content).length >= DUP_LIMIT) reason = 'messaggio ripetuto';
+    else if (m.mentions.users.size + m.mentions.roles.size >= MENTION_LIMIT) reason = 'menzioni di massa';
+    if (!reason) return;
+
+    history.delete(key);
+    await punishSpam(m, arr, reason);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function onInteraction(i) {
+  if (!i.isButton() || i.customId !== 'raid:unlock') return;
+  try {
+    if (!i.member.permissions.has(V.ModerateMembers) && !isStaff(i.member)) {
+      return i.reply({ content: 'Solo lo staff può terminare il lockdown.', flags: MessageFlags.Ephemeral });
+    }
+    const s = raidState(i.guildId);
+    s.until = 0;
+    s.joins = [];
+    await i.reply({ content: 'Lockdown terminato. I timeout già dati restano, puoi toglierli a mano se erano falsi positivi.', flags: MessageFlags.Ephemeral });
+    logEvent(i.guild, { title: 'Lockdown terminato', color: palette.ok, description: `Da <@${i.user.id}>` });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+module.exports = { init, onMessage, onInteraction };
