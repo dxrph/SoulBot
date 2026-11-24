@@ -24,7 +24,7 @@ Il bot del server Discord di **[ONYZUK4](https://twitch.tv/onyzuk4)**: il posto 
 
 ## 🎮 Giocare con ONYZUK4
 - **⚔️ THE BATTLEFIELD**: stanze vocali Ranked, Casual, Duo e Trio che restano sempre con esattamente una stanza vuota per tipo, più `➕ Create Room` per crearsi una stanza propria
-- **Cerco squadra**: scrivi per esempio `ranked archon need 2` e il bot crea la card del gruppo, oppure usa `/lfg`
+- **Cerco squadra**: scrivi per esempio `ranked oracle need 2` e il bot crea la card del gruppo, oppure usa `/lfg`
 - Rank verificati: da Emissary in su serve `/verifica-rank` con uno screenshot, e lo staff approva da `📥┃rank-queue`
 - Inviti al gioco (`🎟️┃invito-al-gioco`), patch notes ufficiali in inglese e tradotte in italiano, forum con le guide degli eroi e delle build (`/sync-guides`)
 - **🎓 Scuola dell'Ego**: richieste di coaching e analisi dei replay

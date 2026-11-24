@@ -40,16 +40,19 @@ const roles = [
   { key: 'vip', name: 'Ace', color: 0xC77DFF, hoist: true, old: ['💎 VIP della Live'] },
   { key: 'sub', name: 'Nakama', color: 0x7C4DFF, hoist: true, old: ['💜 Sub'] },
 
-  // Ranks (highest first) — official Deadlock names, emoji prefix removed
+  // Ranks (highest first) — official Deadlock ladder (Beta Season 2, July 2026)
   { key: 'eternus', name: 'Eternus', color: 0xC77DFF, hoist: true, group: 'rank', verify: true, old: ['🌌 Eternus'] },
   { key: 'ascendant', name: 'Ascendant', color: 0xB388FF, hoist: true, group: 'rank', verify: true, old: ['🪽 Ascendant'] },
   { key: 'phantom', name: 'Phantom', color: 0x7C4DFF, hoist: true, group: 'rank', verify: true, old: ['👻 Phantom'] },
   { key: 'oracle', name: 'Oracle', color: 0x4FC3F7, hoist: true, group: 'rank', verify: true, old: ['👁️ Oracle'] },
-  { key: 'archon', name: 'Archon', color: 0x40C4FF, hoist: true, group: 'rank', verify: true, old: ['⚜️ Archon'] },
   { key: 'emissary', name: 'Emissary', color: 0x26C6DA, hoist: true, group: 'rank', verify: true, old: ['🕯️ Emissary'] },
   { key: 'ritualist', name: 'Ritualist', color: 0x4DB6AC, hoist: true, group: 'rank', old: ['🩸 Ritualist'] },
-  { key: 'arcanist', name: 'Arcanist', color: 0x81C784, hoist: true, group: 'rank', old: ['📖 Arcanist'] },
-  { key: 'alchemist', name: 'Alchemist', color: 0xAED581, hoist: true, group: 'rank', old: ['⚗️ Alchemist'] },
+  { key: 'mystic', name: 'Mystic', color: 0x90A4AE, hoist: true, group: 'rank',
+    old: ['Archon', '⚜️ Archon'] },
+  { key: 'sentinel', name: 'Sentinel', color: 0x81C784, hoist: true, group: 'rank',
+    old: ['Arcanist', '📖 Arcanist'] },
+  { key: 'acolyte', name: 'Acolyte', color: 0xAED581, hoist: true, group: 'rank',
+    old: ['Alchemist', '⚗️ Alchemist'] },
   { key: 'seeker', name: 'Seeker', color: 0xFFD54F, hoist: true, group: 'rank', old: ['🧭 Seeker'] },
   { key: 'initiate', name: 'Initiate', color: 0xBCAAA4, hoist: true, group: 'rank', old: ['🕳️ Initiate'] },
 

@@ -125,8 +125,8 @@ const panels = {
         `Due modi per cercare compagni.\n${LINE}\n` +
         '**Guidato** · premi il pulsante e scegli modalità, rank e dimensione dai menu.\n\n' +
         '**Scrivi e basta** · manda la richiesta qui e il bot la trasforma in una card.\n' +
-        '> `cerco 2 ranked archon, sere EU`\n' +
-        '> `ranked archon need 2, evenings EU`\n' +
+        '> `cerco 2 ranked oracle, sere EU`\n' +
+        '> `ranked oracle need 2, evenings EU`\n' +
         '> `casual duo, sto imparando Haze`\n' +
         `${LINE}\nInizia il messaggio con \`//\` per chiacchierare senza creare una card.`,
       ))],
