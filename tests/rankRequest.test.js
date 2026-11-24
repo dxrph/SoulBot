@@ -6,6 +6,10 @@ test('encode/decode round trip', () => {
   assert.deepEqual(decodeRequest(encodeRequest('123', 'oracle')), { userId: '123', rankKey: 'oracle' });
 });
 
+test('decode accepts a branded footer suffix', () => {
+  assert.deepEqual(decodeRequest('123:oracle · ONYZUK4 · Soulside'), { userId: '123', rankKey: 'oracle' });
+});
+
 test('decode rejects garbage', () => {
   assert.equal(decodeRequest('nope'), null);
   assert.equal(decodeRequest(undefined), null);
@@ -21,5 +25,5 @@ test('already held is refused', () => assert.equal(checkRequest({ ...base, alrea
 test('pending request is refused', () => assert.equal(checkRequest({ ...base, pendingExists: true }).ok, false));
 test('every refusal explains why', () => {
   const out = checkRequest({ ...base, pendingExists: true });
-  assert.match(out.reason, /pending/i);
+  assert.match(out.reason, /attesa|pending/i);
 });
