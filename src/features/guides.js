@@ -352,33 +352,32 @@ const commands = [
     .setDefaultMemberPermissions(V.Administrator),
 ].map((c) => c.toJSON());
 
-function init(client) {
-  client.once('clientReady', () => {
-    // A restart or an error can cut a run short: retry every few minutes (max 6 times) until it completes
-    let retries = 0;
-    const run = async () => {
-      const res = await syncAll(client).catch((e) => { console.error(e); return { incomplete: true }; });
-      if (res?.incomplete && retries < 6) { retries += 1; setTimeout(run, 3 * 60_000).unref(); } else retries = 0;
-    };
-    setTimeout(run, 45_000);
-    setInterval(run, REFRESH_MS).unref();
-  });
-
-  client.on('interactionCreate', async (i) => {
-    if (!i.isChatInputCommand() || i.commandName !== 'sync-guides') return;
-    try {
-      if (running) return await i.reply({ content: 'A sync is already running. Try again in a few minutes.', flags: MessageFlags.Ephemeral });
-      await i.reply({ content: '⏳ Syncing heroes and builds (a few minutes the first time)...', flags: MessageFlags.Ephemeral });
-      client.emit('patchesCheck');
-      const res = await syncAll(client);
-      await i.editReply(res?.report.length
-        ? `${res.incomplete ? '⚠️ Finished with errors, the bot will retry in a few minutes.' : '✅ Done.'}\n${res.report.join('\n')}`
-        : '⚠️ No hero/build forums found. Run /add-tools first.');
-    } catch (err) {
-      console.error(err);
-      await i.editReply(`❌ ${err.message}`).catch(() => {});
-    }
-  });
+function onReady(client) {
+  // A restart or an error can cut a run short: retry every few minutes (max 6 times) until it completes
+  let retries = 0;
+  const run = async () => {
+    const res = await syncAll(client).catch((e) => { console.error(e); return { incomplete: true }; });
+    if (res?.incomplete && retries < 6) { retries += 1; setTimeout(run, 3 * 60_000).unref(); } else retries = 0;
+  };
+  setTimeout(run, 45_000);
+  setInterval(run, REFRESH_MS).unref();
 }
 
-module.exports = { init, commands };
+async function onInteraction(i) {
+  const { client } = i;
+  if (!i.isChatInputCommand() || i.commandName !== 'sync-guides') return;
+  try {
+    if (running) return await i.reply({ content: 'A sync is already running. Try again in a few minutes.', flags: MessageFlags.Ephemeral });
+    await i.reply({ content: '⏳ Syncing heroes and builds (a few minutes the first time)...', flags: MessageFlags.Ephemeral });
+    client.emit('patchesCheck');
+    const res = await syncAll(client);
+    await i.editReply(res?.report.length
+      ? `${res.incomplete ? '⚠️ Finished with errors, the bot will retry in a few minutes.' : '✅ Done.'}\n${res.report.join('\n')}`
+      : '⚠️ No hero/build forums found. Run /add-tools first.');
+  } catch (err) {
+    console.error(err);
+    await i.editReply(`❌ ${err.message}`).catch(() => {});
+  }
+}
+
+module.exports = { onReady, onInteraction, commands };

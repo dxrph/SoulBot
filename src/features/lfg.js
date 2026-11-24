@@ -212,31 +212,29 @@ async function uiInteraction(i) {
   return i.isFromMessage() ? i.update(renderDraft(d)) : i.reply({ ...renderDraft(d), flags: MessageFlags.Ephemeral });
 }
 
-function init(client) {
-  client.on('interactionCreate', async (i) => {
-    try {
-      if (i.isChatInputCommand() && i.commandName === 'lfg') return await slashLfg(i);
-      if (i.isButton() && i.customId.startsWith('lfg:')) return await partyButton(i);
-      if ((i.isButton() || i.isStringSelectMenu() || i.isModalSubmit()) && i.customId.startsWith('lfgui:')) return await uiInteraction(i);
-    } catch (err) {
-      console.error(err);
-      if (!i.replied && !i.deferred) await i.reply({ content: `❌ ${err.message}`, flags: MessageFlags.Ephemeral }).catch(() => {});
-    }
-  });
-
-  client.on('messageCreate', async (m) => {
-    try {
-      if (!m.guild || m.author.bot || !m.member || m.reference || m.attachments.size) return;
-      const key = LFG_KEYS.find((k) => channelByKey(m.guild, k)?.id === m.channelId);
-      if (!key || m.content.trim().length < 4 || m.content.startsWith('//')) return;
-
-      const req = parseRequest(m.content, memberRank(m.member), key);
-      await postCard({ guild: m.guild, user: m.author, ...req, channel: m.channel });
-      await m.delete().catch(() => {});
-    } catch (err) {
-      console.error(err);
-    }
-  });
+async function onInteraction(i) {
+  try {
+    if (i.isChatInputCommand() && i.commandName === 'lfg') return await slashLfg(i);
+    if (i.isButton() && i.customId.startsWith('lfg:')) return await partyButton(i);
+    if ((i.isButton() || i.isStringSelectMenu() || i.isModalSubmit()) && i.customId.startsWith('lfgui:')) return await uiInteraction(i);
+  } catch (err) {
+    console.error(err);
+    if (!i.replied && !i.deferred) await i.reply({ content: `❌ ${err.message}`, flags: MessageFlags.Ephemeral }).catch(() => {});
+  }
 }
 
-module.exports = { init, commands, panels };
+async function onMessage(m) {
+  try {
+    if (!m.guild || m.author.bot || !m.member || m.reference || m.attachments.size) return;
+    const key = LFG_KEYS.find((k) => channelByKey(m.guild, k)?.id === m.channelId);
+    if (!key || m.content.trim().length < 4 || m.content.startsWith('//')) return;
+
+    const req = parseRequest(m.content, memberRank(m.member), key);
+    await postCard({ guild: m.guild, user: m.author, ...req, channel: m.channel });
+    await m.delete().catch(() => {});
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+module.exports = { onInteraction, onMessage, commands, panels };

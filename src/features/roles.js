@@ -192,22 +192,20 @@ async function confirmPurge(i, yes) {
   await i.editReply({ content: `Rimossi ${ok} ruoli eroe orfani.`, components: [] });
 }
 
-function init(client) {
-  client.on('interactionCreate', async (i) => {
-    try {
-      if (i.isChatInputCommand() && i.commandName === 'profilo') {
-        await i.deferReply({ flags: MessageFlags.Ephemeral });
-        return await i.editReply(await overview(i.member));
-      }
-      if (i.isChatInputCommand() && i.commandName === 'pulisci-eroi') return await cleanupHeroes(i);
-      if (i.isButton() && i.customId === 'heroes:purge') return await confirmPurge(i, true);
-      if (i.isButton() && i.customId === 'heroes:purge-no') return await confirmPurge(i, false);
-      if (i.isButton() && i.customId.startsWith('profile:')) return await profileButton(i);
-      if (i.isStringSelectMenu()) return await selectMenu(i);
-    } catch (err) {
-      console.error(err);
+async function onInteraction(i) {
+  try {
+    if (i.isChatInputCommand() && i.commandName === 'profilo') {
+      await i.deferReply({ flags: MessageFlags.Ephemeral });
+      return await i.editReply(await overview(i.member));
     }
-  });
+    if (i.isChatInputCommand() && i.commandName === 'pulisci-eroi') return await cleanupHeroes(i);
+    if (i.isButton() && i.customId === 'heroes:purge') return await confirmPurge(i, true);
+    if (i.isButton() && i.customId === 'heroes:purge-no') return await confirmPurge(i, false);
+    if (i.isButton() && i.customId.startsWith('profile:')) return await profileButton(i);
+    if (i.isStringSelectMenu()) return await selectMenu(i);
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-module.exports = { init, panels, commands, isLegacyTitle };
+module.exports = { onInteraction, panels, commands, isLegacyTitle };
