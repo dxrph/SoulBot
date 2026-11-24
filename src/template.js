@@ -10,7 +10,8 @@ const streamer = {
   name: 'ONYZUK4',
   twitch: 'onyzuk4',
   kick: 'onyzuk4',
-  motto: 'Egoista. Manca poco al Radiant: credi in me anche tu.',
+  // PROPOSTA in attesa di conferma di Onyzuka (il vecchio motto parlava del Radiant di Valorant)
+  motto: 'Egoista. Manca poco all\'Eternus: credi in me anche tu.',
   color: 0x4FC3F7, // Infinity blue — live alerts use the live red instead
   links: {
     twitch: 'https://twitch.tv/onyzuk4',
@@ -18,6 +19,7 @@ const streamer = {
     youtube: process.env.YOUTUBE_URL || 'https://youtube.com/@Onyzuk4',
     instagram: process.env.INSTAGRAM_URL || 'https://instagram.com/onyzuka.wrld',
     x: process.env.X_URL || 'https://x.com/onyzuk4',
+    // TODO: link TikTok non ancora confermato da Onyzuka. Non inventarlo: va messo qui o in TIKTOK_URL.
     tiktok: process.env.TIKTOK_URL || '',
   },
 };
@@ -66,11 +68,28 @@ const roles = [
   { key: 'live', name: 'Scouter', color: 0xE11D2A, group: 'extra', old: ['🔴 Notifiche Live'] },
   { key: 'lfg', name: 'Hunters', color: 0x7C4DFF, group: 'extra', old: ['🐺 Cerco Squadra', '🐺 Hunting for Party'] },
   { key: 'muted', name: 'Sigillato', color: 0x607D8B, old: ['🔇 Silenziato', '🔇 Silenced by the Void'] },
+
+  // NEW: level rewards (XP from chat and voice). level = minimum level; the bot keeps only the highest one.
+  { key: 'lvl_genin', name: 'Genin', color: 0x90A4AE, level: 5 },
+  { key: 'lvl_chunin', name: 'Chunin', color: 0x4DB6AC, level: 10 },
+  { key: 'lvl_jonin', name: 'Jonin', color: 0x4FC3F7, level: 20 },
+  { key: 'lvl_anbu', name: 'ANBU', color: 0x7C4DFF, level: 30 },
+  { key: 'lvl_kage', name: 'Kage', color: 0xC77DFF, level: 50 },
 ];
 
 // vis: 'public' = everyone, 'member' = Egoisti only, 'staff' = staff only
 // Channel and voice names are left unchanged on purpose.
 const categories = [
+  {
+    // NEW: live counters. Locked voice channels (nobody can join), renamed by the bot every 10 minutes.
+    // stat -> matched by name prefix, because the bot appends ": N" to the name.
+    name: '📊 STATISTICHE', vis: 'public',
+    channels: [
+      { name: '👥 Membri', type: 'voice', locked: true, stat: 'members' },
+      { name: '💜 Follower', type: 'voice', locked: true, stat: 'followers' },
+      { name: '🎯 Affiliate', type: 'voice', locked: true, stat: 'affiliate' },
+    ],
+  },
   {
     name: '🚪 L\'INGRESSO', vis: 'public', old: ['📌 THE GATE'],
     channels: [
@@ -156,10 +175,46 @@ const categories = [
       { name: '📥┃rank-queue', type: 'text', special: 'rankqueue' },
       { name: '📋┃mod-log', type: 'text', special: 'modlog' },
       { name: '🛠️┃staff-chat', type: 'text' },
+      // NEW: detailed logs, so the mod log stays readable (if missing, everything goes to the mod log)
+      { name: '🗑️┃log-messaggi', type: 'text', special: 'log_messages' },
+      { name: '🔊┃log-vocale', type: 'text', special: 'log_voice' },
+      // NEW: the bot saves its state here (levels as a pinned JSON file). Do not delete its messages.
+      { name: '💾┃dati-bot', type: 'text', special: 'botdata' },
       { name: '🛠️ Staff Voice', type: 'voice' },
     ],
   },
   { name: '🎫 TICKETS', vis: 'staff', channels: [] },
 ];
 
-module.exports = { streamer, roles, categories };
+// Bot behaviour knobs (no Railway variable needed: change them here and push)
+const settings = {
+  verify: {
+    captchaLength: 5, // characters of the code shown before the "Entra" modal
+    captchaTries: 3,
+    captchaMinutes: 5, // the code expires after this many minutes
+    minAccountAgeDays: 3, // younger accounts wait for a staff "Approva" in the mod log (0 = off)
+  },
+  welcome: {
+    // Image under the welcome message (Gojo style banner, 960x540 works well). Empty = no image.
+    bannerUrl: '',
+    goodbye: true, // ironic message in benvenuti when an Egoista leaves
+  },
+  stats: {
+    enabled: true,
+    intervalMinutes: 10, // Discord allows ~2 renames per channel every 10 minutes: never go lower
+    affiliateGoal: 50, // Twitch Affiliate needs 50 followers
+    // Followers come from decapi.me (the same free service the live alerts use), no Twitch key needed
+    followers: true,
+  },
+  levels: {
+    // XP is saved as a JSON file pinned in 💾┃dati-bot (no database, no Railway volume needed).
+    // Set to false to switch the whole feature off (commands stay, they just say it's off).
+    enabled: true,
+    messageXp: [15, 25], // random XP per message...
+    messageCooldownSec: 60, // ...at most once a minute per person
+    voiceXpPerMinute: 6, // in voice with at least one other person, not muted/deafened, not in AFK
+    saveEveryMinutes: 5,
+  },
+};
+
+module.exports = { streamer, roles, categories, settings };
