@@ -1,26 +1,21 @@
 const {
-  PermissionFlagsBits: V, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags,
+  PermissionFlagsBits: V, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags,
 } = require('discord.js');
 const { roles, categories } = require('./template');
-const { roleMap, channelByKey, mergeOw, specialNames } = require('./util');
+const { roleMap, channelByKey, mergeOw, specialNames, remember } = require('./util');
 const { panels, isLegacyTitle } = require('./features');
 const { EVERYONE_PERMS, ensureEveryoneCanStream } = require('./permissions');
+const { guildSlash } = require('./slash');
 
-const pending = new Map(); // guildId -> userId who requested the wipe
+const pending = new Map();
 
 const commands = [
-  new SlashCommandBuilder()
-    .setName('setup-server')
-    .setDescription('DELETES everything in this server and rebuilds the ONYZUK4 community')
-    .setDefaultMemberPermissions(V.Administrator).setDMPermission(false),
-  new SlashCommandBuilder()
-    .setName('add-tools')
-    .setDescription('Updates the server to the new layout: renames old items, adds what is missing, deletes nothing')
-    .setDefaultMemberPermissions(V.Administrator).setDMPermission(false),
-  new SlashCommandBuilder()
-    .setName('refresh-panels')
-    .setDescription('Reposts the verify, roles, rules, live, social and LFG panels with the latest design')
-    .setDefaultMemberPermissions(V.Administrator).setDMPermission(false),
+  guildSlash('setup-server', 'ATTENZIONE: cancella tutto e ricostruisce il server ONYZUK4')
+    .setDefaultMemberPermissions(V.Administrator),
+  guildSlash('add-tools', 'Aggiorna il server al layout nuovo: rinomina, aggiunge, non cancella niente')
+    .setDefaultMemberPermissions(V.Administrator),
+  guildSlash('refresh-panels', 'Ripubblica i pannelli (verifica, ruoli, regole, live, social, LFG) con il design nuovo')
+    .setDefaultMemberPermissions(V.Administrator),
 ].map((c) => c.toJSON());
 
 function init(client) {
@@ -36,17 +31,20 @@ function init(client) {
   });
 }
 
-const ownerOnly = (i) => i.reply({ content: 'Only the server owner can use this command.', flags: MessageFlags.Ephemeral });
+const ownerOnly = (i) => i.reply({ content: 'Solo il proprietario del server può usare questo comando.', flags: MessageFlags.Ephemeral });
 
 async function askConfirm(i) {
   if (i.user.id !== i.guild.ownerId) return ownerOnly(i);
   pending.set(i.guildId, i.user.id);
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('setup:yes').setLabel('Yes, delete everything').setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId('setup:no').setLabel('Cancel').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('setup:yes').setLabel('Sì, cancella tutto').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('setup:no').setLabel('Annulla').setStyle(ButtonStyle.Secondary),
   );
   await i.reply({
-    content: '⚠️ This deletes **ALL channels and roles** (below the bot\'s role) and rebuilds the ONYZUK4 layout. It cannot be undone.',
+    content:
+      '⚠️ **Pericolo.** Questo comando cancella **TUTTI i canali e i ruoli** (sotto il ruolo del bot) e ricostruisce il layout ONYZUK4. Non si può annullare.\n\n' +
+      'Per un aggiornamento (nuovi nomi ruolo, pannelli, funzioni) usa **`/add-tools`** e poi **`/refresh-panels`**: non cancella niente e i membri tengono i ruoli.\n\n' +
+      'Usa `/setup-server` solo su un server vuoto o se vuoi davvero ripartire da zero.',
     components: [row],
     flags: MessageFlags.Ephemeral,
   });
@@ -54,22 +52,21 @@ async function askConfirm(i) {
 
 async function handleWipeButton(i) {
   if (pending.get(i.guildId) !== i.user.id) {
-    return i.reply({ content: 'You cannot use this button.', flags: MessageFlags.Ephemeral });
+    return i.reply({ content: 'Non puoi usare questo pulsante.', flags: MessageFlags.Ephemeral });
   }
   pending.delete(i.guildId);
-  if (i.customId === 'setup:no') return i.update({ content: 'Cancelled.', components: [] });
+  if (i.customId === 'setup:no') return i.update({ content: 'Annullato.', components: [] });
 
-  await i.update({ content: '⏳ Setup in progress...', components: [] });
+  await i.update({ content: 'Setup in corso...', components: [] });
   try {
     await wipe(i.guild);
     const failed = await build(i.guild);
-    // The channel this ran in no longer exists, so reply through the interaction
-    await i.editReply({ content: `✅ Done. Give yourself ${roles.find((r) => r.key === 'owner').name} and ${roles.find((r) => r.key === 'player').name} to see everything.` +
-      (failed.length ? `
-⚠️ Forums not created (${failed.join(', ')}): enable **Community** in Server Settings, then run /add-tools.` : '') });
+    remember(i.guild);
+    await i.editReply({ content: `Fatto. Assegnati ${roles.find((r) => r.key === 'owner').name} e ${roles.find((r) => r.key === 'player').name} per vedere tutto.` +
+      (failed.length ? `\n⚠️ Forum non creati (${failed.join(', ')}): attiva **Community** nelle impostazioni, poi usa /add-tools.` : '') });
   } catch (err) {
     console.error(err);
-    await i.editReply({ content: `❌ Setup failed: ${err.message}` }).catch(() => {});
+    await i.editReply({ content: `Setup non riuscito: ${err.message}` }).catch(() => {});
   }
 }
 
@@ -84,14 +81,15 @@ async function addTools(i) {
     const streamFixed = await ensureEveryoneCanStream(i.guild);
     const failed = await buildCategories(i.guild, R, false);
     await orderCategories(i.guild);
+    remember(i.guild);
     await ensurePanels(i.guild);
     i.client.emit('patchesCheck');
     await i.editReply(failed.length
-      ? `⚠️ Done, but these forums could not be created: ${failed.join(', ')}. Enable **Community** in Server Settings, then run /add-tools again.`
-      : `✅ Server updated${renamed ? ` (${renamed} renamed)` : ''}.${streamFixed ? ' Screen sharing enabled for everyone.' : ''} Run /refresh-panels to repost the panels with the new design, and /sync-guides for the hero and build forums.`);
+      ? `Fatto, ma questi forum non sono stati creati: ${failed.join(', ')}. Attiva **Community** nelle impostazioni, poi rilancia /add-tools.`
+      : `Server aggiornato${renamed ? ` (${renamed} rinominati)` : ''}.${streamFixed ? ' Condivisione schermo attiva per tutti.' : ''} Usa /refresh-panels per ripubblicare i pannelli e /sync-guides per i forum eroi e build.`);
   } catch (err) {
     console.error(err);
-    await i.editReply(`❌ Failed: ${err.message}`);
+    await i.editReply(`Non riuscito: ${err.message}`);
   }
 }
 
@@ -100,11 +98,12 @@ async function refresh(i) {
   await i.deferReply({ flags: MessageFlags.Ephemeral });
   try {
     await i.guild.channels.fetch();
+    remember(i.guild);
     await refreshPanels(i.guild);
-    await i.editReply('✅ Panels reposted.');
+    await i.editReply('Pannelli ripubblicati.');
   } catch (err) {
     console.error(err);
-    await i.editReply(`❌ Failed: ${err.message}`);
+    await i.editReply(`Non riuscito: ${err.message}`);
   }
 }
 
@@ -129,18 +128,17 @@ async function build(guild) {
       name: def.name, color: def.color, hoist: !!def.hoist, permissions: perms,
     });
   }
-  // Keep list order (staff on top, then ranks...), just below the bot's role
   const top = guild.members.me.roles.highest.position - 1;
   await guild.roles.setPositions(roles.map((d, idx) => ({ role: R[d.key].id, position: Math.max(1, top - idx) }))).catch(() => {});
 
   await guild.roles.everyone.setPermissions(EVERYONE_PERMS);
 
   const failed = await buildCategories(guild, R, false);
+  remember(guild);
   await ensurePanels(guild);
   return failed;
 }
 
-// onlySpecial: create only the missing channels used by bot features
 async function buildCategories(guild, R, onlySpecial) {
   const failedForums = [];
 
@@ -154,8 +152,7 @@ async function buildCategories(guild, R, onlySpecial) {
 
     for (const ch of cat.channels) {
       if (onlySpecial && !ch.special) continue;
-      if (guild.channels.cache.some((x) => x.name === ch.name)) continue; // already there (possibly moved by the owner)
-      // Match rooms are added/removed by the voice balancer: one room of the group is enough
+      if (guild.channels.cache.some((x) => x.name === ch.name)) continue;
       if (ch.limit && guild.channels.cache.some((x) => x.name.startsWith(ch.name.replace(/\d+ \(\d+\)$/, '')))) continue;
 
       const isVoice = ch.type === 'voice';
@@ -171,14 +168,13 @@ async function buildCategories(guild, R, onlySpecial) {
         });
       } catch (err) {
         if (!isForum) throw err;
-        failedForums.push(ch.name); // forums need the Community feature enabled on the server
+        failedForums.push(ch.name);
       }
     }
   }
   return failedForums;
 }
 
-// Permission overwrites of a category, from its visibility in the template
 function categoryOw(guild, R, cat) {
   const everyone = guild.roles.everyone;
   const ow = [];
@@ -190,7 +186,6 @@ function categoryOw(guild, R, cat) {
   return ow;
 }
 
-// Category overwrites plus the channel's own rules (read-only, forum without new posts)
 function channelOw(guild, R, cat, ch) {
   const everyone = guild.roles.everyone;
   const staff = [R.owner, R.admin, R.mod];
@@ -200,7 +195,7 @@ function channelOw(guild, R, cat, ch) {
     ow.push({ id: R.player.id, deny: [V.SendMessages] });
     for (const s of staff) ow.push({ id: s.id, allow: [V.SendMessages] });
   }
-  if (ch.noPosts) { // forum: everyone can reply in posts, nobody but staff/bot starts new ones
+  if (ch.noPosts) {
     ow.push({ id: everyone.id, deny: [V.CreatePublicThreads, V.CreatePrivateThreads] });
     ow.push({ id: R.player.id, deny: [V.CreatePublicThreads, V.CreatePrivateThreads] });
     for (const s of staff) ow.push({ id: s.id, allow: [V.CreatePublicThreads] });
@@ -208,8 +203,6 @@ function channelOw(guild, R, cat, ch) {
   return mergeOw(ow);
 }
 
-// Roles, categories and channels from the old layout get their new name (members keep their roles).
-// A channel that changed category is moved there with that category's permissions.
 async function renameLegacy(guild) {
   let count = 0;
   const has = (list, name) => list.some((x) => x.name === name);
@@ -241,7 +234,6 @@ async function renameLegacy(guild) {
   return count;
 }
 
-// Creates the template roles this server does not have yet (new ones like Live pings, VIP, Sub)
 async function ensureRoles(guild) {
   await guild.roles.fetch();
   const R = roleMap(guild);
@@ -253,7 +245,6 @@ async function ensureRoles(guild) {
   return R;
 }
 
-// Puts the categories in template order (the live corner right below the entrance)
 async function orderCategories(guild) {
   const list = categories
     .map((cat) => guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && c.name === cat.name))
@@ -262,11 +253,9 @@ async function orderCategories(guild) {
   await guild.channels.setPositions(list).catch(console.warn);
 }
 
-// A panel is one message or a list of messages; the first embed title identifies it in the channel
 const asList = async (key, guild) => [].concat(await panels[key](guild));
 const titleOf = (payload) => payload.embeds?.[0]?.data?.title ?? payload.embeds?.[0]?.title;
 
-// Posts each panel (verify button, role menus, rules, ticket button, LFG) if the channel does not have it yet
 async function ensurePanels(guild) {
   for (const key of Object.keys(panels)) {
     const ch = channelByKey(guild, key);
@@ -283,7 +272,6 @@ async function ensurePanels(guild) {
   }
 }
 
-// Deletes the bot's panel messages and posts them again (use after a design change)
 async function refreshPanels(guild) {
   for (const key of Object.keys(panels)) {
     const ch = channelByKey(guild, key);
