@@ -1,5 +1,5 @@
 const {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, AttachmentBuilder, MessageFlags, SlashCommandBuilder,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, AttachmentBuilder, MessageFlags,
 } = require('discord.js');
 const path = require('node:path');
 const { roles } = require('../template');
@@ -7,22 +7,21 @@ const { roleMap, channelByKey, isStaff, logEvent } = require('../util');
 const { verifiedRanks, rankByKey } = require('../ranks');
 const { diffRoles } = require('../roleDiff');
 const { encodeRequest, decodeRequest, checkRequest } = require('../rankRequest');
+const { guildSlash } = require('../slash');
+const { palette, withFooter, baseEmbed } = require('../style');
 
 const commands = [
-  new SlashCommandBuilder()
-    .setName('verifica-rank')
-    .setDescription('Ask staff to verify an Emissary or higher rank')
-    .setDMPermission(false)
-    .addStringOption((o) => o.setName('rank').setDescription('Your rank').setRequired(true)
+  guildSlash('verifica-rank', 'Chiedi allo staff di verificare un rank da Emissary in su')
+    .addStringOption((o) => o.setName('rank').setDescription('Il tuo rank').setRequired(true)
       .addChoices(...verifiedRanks.map((r) => ({ name: r.name, value: r.key }))))
-    .addAttachmentOption((o) => o.setName('screenshot').setDescription('Screenshot of your Deadlock profile showing the rank').setRequired(true)),
+    .addAttachmentOption((o) => o.setName('screenshot').setDescription('Screenshot del profilo Deadlock con il rank').setRequired(true)),
 ].map((c) => c.toJSON());
 
 const refuse = (i, content) => i.reply({ content, flags: MessageFlags.Ephemeral });
 
 async function request(i) {
   const queue = channelByKey(i.guild, 'rankqueue');
-  if (!queue) return refuse(i, 'Rank requests are not set up yet. Ask staff to run /add-tools.');
+  if (!queue) return refuse(i, 'Le richieste rank non sono ancora pronte. Chiedi allo staff di usare /add-tools.');
   await i.deferReply({ flags: MessageFlags.Ephemeral });
 
   const rankKey = i.options.getString('rank');
@@ -38,33 +37,32 @@ async function request(i) {
   });
   if (!check.ok) return i.editReply(check.reason);
 
-  // The screenshot is re-uploaded so the card keeps it after the original link expires
   const file = new AttachmentBuilder(shot.url, { name: `screenshot${path.extname(shot.name) || '.png'}` });
   await queue.send({
-    embeds: [new EmbedBuilder().setColor(0xf1c40f).setTitle('🎖️ Rank request')
-      .setDescription(`<@${i.user.id}> asks for **${rankByKey(rankKey).name}**`)
-      .setImage(`attachment://${file.name}`).setFooter({ text: encodeRequest(i.user.id, rankKey) })],
+    embeds: [withFooter(baseEmbed(palette.warn).setTitle('Richiesta rank')
+      .setDescription(`<@${i.user.id}> chiede **${rankByKey(rankKey).name}**`)
+      .setImage(`attachment://${file.name}`), encodeRequest(i.user.id, rankKey))],
     files: [file],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('rankq:ok').setLabel('Approve').setEmoji('✅').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('rankq:no').setLabel('Reject').setEmoji('❌').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('rankq:ok').setLabel('Approva').setEmoji('✅').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('rankq:no').setLabel('Rifiuta').setEmoji('❌').setStyle(ButtonStyle.Danger),
     )],
   });
-  await i.editReply('📨 Sent to staff. You will get a message when it is reviewed.');
+  await i.editReply('Inviata allo staff. Ti scrivo quando viene esaminata.');
 }
 
 async function review(i, approve) {
-  if (!isStaff(i.member)) return refuse(i, 'Only staff can review rank requests.');
+  if (!isStaff(i.member)) return refuse(i, 'Solo lo staff può esaminare le richieste rank.');
   const req = decodeRequest(i.message.embeds[0]?.footer?.text);
-  if (!req) return refuse(i, 'I cannot read this request.');
-  if (req.userId === i.user.id) return refuse(i, 'You cannot review your own request.');
+  if (!req) return refuse(i, 'Non riesco a leggere questa richiesta.');
+  if (req.userId === i.user.id) return refuse(i, 'Non puoi esaminare la tua richiesta.');
   await i.deferUpdate();
 
   const embed = EmbedBuilder.from(i.message.embeds[0]);
   const rank = rankByKey(req.rankKey);
   const member = await i.guild.members.fetch(req.userId).catch(() => null);
   if (!member) {
-    embed.setColor(0x95a5a6).addFields({ name: 'Status', value: 'The member left the server.' });
+    withFooter(embed.setColor(palette.muted).addFields({ name: 'Stato', value: 'Il membro ha lasciato il server.' }));
     return i.editReply({ embeds: [embed], components: [] });
   }
 
@@ -75,15 +73,15 @@ async function review(i, approve) {
     if (remove.length) await member.roles.remove(remove);
     if (add.length) await member.roles.add(add);
   }
-  const verdict = approve ? `✅ Approved by <@${i.user.id}>` : `❌ Rejected by <@${i.user.id}>`;
-  embed.setColor(approve ? 0x2ecc71 : 0xe74c3c).addFields({ name: 'Status', value: verdict });
+  const verdict = approve ? `Approvata da <@${i.user.id}>` : `Rifiutata da <@${i.user.id}>`;
+  withFooter(embed.setColor(approve ? palette.ok : palette.live).addFields({ name: 'Stato', value: verdict }));
   await i.editReply({ embeds: [embed], components: [] });
   member.send(approve
-    ? `✅ Your **${rank.name}** rank was verified in ${i.guild.name}.`
-    : `❌ Your **${rank.name}** request in ${i.guild.name} was not approved. You can send a clearer screenshot with /verifica-rank.`)
+    ? `Il tuo rank **${rank.name}** è stato verificato in ${i.guild.name}.`
+    : `La tua richiesta **${rank.name}** in ${i.guild.name} non è stata approvata. Puoi mandare uno screenshot più chiaro con /verifica-rank.`)
     .catch(() => {});
-  logEvent(i.guild, { title: `🎖️ Rank ${approve ? 'approved' : 'rejected'}`, color: approve ? 0x2ecc71 : 0xe74c3c,
-    description: `<@${req.userId}> · ${rank.name} · by <@${i.user.id}>` });
+  logEvent(i.guild, { title: `Rank ${approve ? 'approvato' : 'rifiutato'}`, color: approve ? palette.ok : palette.live,
+    description: `<@${req.userId}> · ${rank.name} · da <@${i.user.id}>` });
 }
 
 function init(client) {
@@ -94,7 +92,7 @@ function init(client) {
       if (i.isButton() && i.customId === 'rankq:no') return await review(i, false);
     } catch (err) {
       console.error(err);
-      if (i.deferred || i.replied) await i.editReply({ content: 'Something went wrong. Try again or ask staff.' }).catch(() => {});
+      if (i.deferred || i.replied) await i.editReply({ content: 'Qualcosa è andato storto. Riprova o chiedi allo staff.' }).catch(() => {});
     }
   });
 }

@@ -1,51 +1,44 @@
 const {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder, MessageFlags, ModalBuilder,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, ModalBuilder,
   TextInputBuilder, TextInputStyle, StringSelectMenuBuilder,
 } = require('discord.js');
-const { roles } = require('../template');
 const { roleMap, channelByKey, isStaff } = require('../util');
+const { parseRequest, ranks } = require('../lfgParse');
+const { guildSlash } = require('../slash');
+const { palette, LINE, withFooter, baseEmbed } = require('../style');
 
-const LINE = '━━━━━━━━━━━━━━━━━━━━━━━━━━';
-const ranks = roles.filter((r) => r.group === 'rank');
-const plainName = (r) => r.name.replace(/[^A-Za-z]/g, '').toLowerCase();
-const LFG_KEYS = ['lfg', 'lfg_ranked', 'lfg_casual']; // channels where typed requests become cards
+const LFG_KEYS = ['lfg', 'lfg_ranked', 'lfg_casual'];
 
 const commands = [
-  new SlashCommandBuilder()
-    .setName('lfg')
-    .setDescription('Post a looking-for-group card')
-    .setDMPermission(false)
-    .addStringOption((o) => o.setName('mode').setDescription('Game mode').setRequired(true)
-      .addChoices({ name: '🏆 Ranked', value: 'ranked' }, { name: '🎲 Casual', value: 'casual' }))
-    .addStringOption((o) => o.setName('rank').setDescription('Your rank (default: your rank role)')
+  guildSlash('lfg', 'Pubblica una card per cercare squadra')
+    .addStringOption((o) => o.setName('mode').setDescription('Modalità').setRequired(true)
+      .addChoices({ name: 'Ranked', value: 'ranked' }, { name: 'Casual', value: 'casual' }))
+    .addStringOption((o) => o.setName('rank').setDescription('Il tuo rank (predefinito: il tuo ruolo rank)')
       .addChoices(...ranks.map((r) => ({ name: r.name, value: r.key }))))
-    .addIntegerOption((o) => o.setName('size').setDescription('Total party size including you (default 6)').setMinValue(2).setMaxValue(6))
-    .addStringOption((o) => o.setName('note').setDescription('Hero, playstyle, schedule...').setMaxLength(200))
-    .addBooleanOption((o) => o.setName('ping').setDescription('Ping Cerco Squadra')),
+    .addIntegerOption((o) => o.setName('size').setDescription('Dimensione del party incluso te (predefinito 6)').setMinValue(2).setMaxValue(6))
+    .addStringOption((o) => o.setName('note').setDescription('Eroe, stile, orario...').setMaxLength(200))
+    .addBooleanOption((o) => o.setName('ping').setDescription('Menziona Hunters')),
 ].map((c) => c.toJSON());
 
-// ---- the party card -------------------------------------------------------------------------
 const mentionsOf = (text) => [...text.matchAll(/<@(\d+)>/g)].map((m) => m[1]);
 
 function card({ rank, mode, size, note, players, host }) {
   const full = players.length >= size;
-  const slots = Array.from({ length: size }, (_, idx) => (players[idx] ? `<@${players[idx]}>` : '▫️ *open slot*')).join('\n');
+  const slots = Array.from({ length: size }, (_, idx) => (players[idx] ? `<@${players[idx]}>` : '· *posto libero*')).join('\n');
   return {
-    embeds: [new EmbedBuilder()
-      .setColor(full ? 0x2ecc71 : mode === 'ranked' ? 0xe74c3c : 0xf39c12)
-      .setTitle(`${mode === 'ranked' ? '🏆 Ranked' : '🎲 Casual'} · ${rank}`)
+    embeds: [withFooter(baseEmbed(full ? palette.ok : mode === 'ranked' ? palette.live : palette.warn)
+      .setTitle(`${mode === 'ranked' ? 'Ranked' : 'Casual'} · ${rank}`)
       .setDescription(note ? `> ${note}` : null)
-      .addFields({ name: `Party (${players.length}/${size})`, value: slots })
-      .setFooter({ text: full ? '✅ Party full' : 'Press Join to take a slot' })],
+      .addFields({ name: `Party (${players.length}/${size})`, value: slots }),
+      full ? 'Party al completo' : 'Premi Unisciti per prendere un posto')],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`lfg:join:${host}`).setLabel('Join').setEmoji('🎮').setStyle(ButtonStyle.Success).setDisabled(full),
-      new ButtonBuilder().setCustomId(`lfg:leave:${host}`).setLabel('Leave').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`lfg:close:${host}`).setLabel('Close').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(`lfg:join:${host}`).setLabel('Unisciti').setEmoji('🎮').setStyle(ButtonStyle.Success).setDisabled(full),
+      new ButtonBuilder().setCustomId(`lfg:leave:${host}`).setLabel('Esci').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`lfg:close:${host}`).setLabel('Chiudi').setStyle(ButtonStyle.Danger),
     )],
   };
 }
 
-// State lives in the message itself: rank/mode in the title, size in the field name, players as mentions
 function parse(message) {
   const e = message.embeds[0];
   const [modeText, rank] = e.title.split(' · ');
@@ -58,16 +51,15 @@ function parse(message) {
   };
 }
 
-const rankLabel = (key) => ranks.find((r) => r.key === key)?.name ?? 'Any rank';
+const rankLabel = (key) => ranks.find((r) => r.key === key)?.name ?? 'Qualsiasi rank';
 const memberRank = (member) => {
   const R = roleMap(member.guild);
   return ranks.find((r) => R[r.key] && member.roles.cache.has(R[r.key].id))?.key ?? null;
 };
 
-// Posts a card for a user. `channel` overrides the default channel of the mode
 async function postCard({ guild, user, rank, mode, size = 6, note, ping, channel }) {
   const target = channel ?? channelByKey(guild, mode === 'ranked' ? 'lfg_ranked' : 'lfg_casual');
-  if (!target) throw new Error('LFG channel not found. Run /add-tools.');
+  if (!target) throw new Error('Canale LFG non trovato. Usa /add-tools.');
   const R = roleMap(guild);
   const pingRole = ping && R.lfg;
   return target.send({
@@ -86,7 +78,7 @@ async function slashLfg(i) {
     note: i.options.getString('note'),
     ping: i.options.getBoolean('ping'),
   });
-  await i.reply({ content: `Posted: ${msg.url}`, flags: MessageFlags.Ephemeral });
+  await i.reply({ content: `Pubblicata: ${msg.url}`, flags: MessageFlags.Ephemeral });
 }
 
 async function partyButton(i) {
@@ -95,102 +87,85 @@ async function partyButton(i) {
 
   if (action === 'close') {
     if (i.user.id !== host && !isStaff(i.member)) {
-      return i.reply({ content: 'Only the host can close this.', flags: MessageFlags.Ephemeral });
+      return i.reply({ content: 'Solo chi ha aperto la card può chiuderla.', flags: MessageFlags.Ephemeral });
     }
-    return i.update({ components: [], embeds: [EmbedBuilder.from(i.message.embeds[0]).setColor(0x95a5a6).setFooter({ text: '🔒 Closed' })] });
+    return i.update({
+      components: [],
+      embeds: [withFooter(EmbedBuilder.from(i.message.embeds[0]).setColor(palette.muted), 'Chiusa')],
+    });
   }
 
   if (action === 'join') {
-    if (state.players.includes(i.user.id)) return i.reply({ content: 'You are already in.', flags: MessageFlags.Ephemeral });
-    if (state.players.length >= state.size) return i.reply({ content: 'Party is full.', flags: MessageFlags.Ephemeral });
+    if (state.players.includes(i.user.id)) return i.reply({ content: 'Sei già nel party.', flags: MessageFlags.Ephemeral });
+    if (state.players.length >= state.size) return i.reply({ content: 'Il party è pieno.', flags: MessageFlags.Ephemeral });
     state.players.push(i.user.id);
   } else {
-    if (i.user.id === host) return i.reply({ content: 'You are the host, use Close.', flags: MessageFlags.Ephemeral });
-    if (!state.players.includes(i.user.id)) return i.reply({ content: 'You are not in this party.', flags: MessageFlags.Ephemeral });
+    if (i.user.id === host) return i.reply({ content: 'Sei il caposquadra, usa Chiudi.', flags: MessageFlags.Ephemeral });
+    if (!state.players.includes(i.user.id)) return i.reply({ content: 'Non sei in questo party.', flags: MessageFlags.Ephemeral });
     state.players = state.players.filter((id) => id !== i.user.id);
   }
 
   await i.update(card({ ...state, host }));
   if (state.players.length >= state.size) {
     await i.channel.send({
-      content: `🎉 Party full! ${state.players.map((id) => `<@${id}>`).join(' ')}`,
+      content: `Party al completo! ${state.players.map((id) => `<@${id}>`).join(' ')}`,
       allowedMentions: { users: state.players },
     }).catch(() => {});
   }
 }
 
-// ---- way 1: write your request in the channel -----------------------------------------------
-// "ranked archon need 2 chill, evenings" -> mode, rank and size are read from the text
-function parseRequest(text, member, channelKey) {
-  const t = text.toLowerCase();
-  let mode = channelKey === 'lfg_ranked' ? 'ranked' : 'casual';
-  if (/\branked?\b/.test(t)) mode = 'ranked';
-  else if (/\b(casual|normals?|fun)\b/.test(t)) mode = 'casual';
-
-  const rank = ranks.find((r) => new RegExp(`\\b${plainName(r)}\\b`).test(t))?.key ?? memberRank(member);
-
-  let size = 6;
-  const need = t.match(/\bneed\s+(\d)\b/);
-  if (/\bduo\b/.test(t)) size = 2;
-  else if (/\btrio\b/.test(t)) size = 3;
-  else if (need) size = Math.min(6, Number(need[1]) + 1);
-  return { mode, rank, size: Math.max(2, size), note: text.trim().slice(0, 200) };
-}
-
-// ---- way 2: the guided UI -------------------------------------------------------------------
-const drafts = new Map(); // userId -> { mode, rank, size, note, ping, at }
+const drafts = new Map();
 const DRAFT_TTL = 15 * 60_000;
 
 const panels = {
   lfg: () => ({
-    embeds: [new EmbedBuilder()
-      .setColor(0xf39c12)
-      .setTitle('🔎 FIND YOUR PARTY')
+    embeds: [withFooter(baseEmbed(palette.warn)
+      .setTitle('Trova la tua squadra')
       .setDescription(
-        `Two ways to ask for teammates.\n${LINE}\n` +
-        '**🧭 Guided** · press the button and pick mode, rank and size from menus.\n\n' +
-        '**✍️ Just write** · type your request here and the bot turns it into a card.\n' +
+        `Due modi per cercare compagni.\n${LINE}\n` +
+        '**Guidato** · premi il pulsante e scegli modalità, rank e dimensione dai menu.\n\n' +
+        '**Scrivi e basta** · manda la richiesta qui e il bot la trasforma in una card.\n' +
+        '> `cerco 2 ranked archon, sere EU`\n' +
         '> `ranked archon need 2, evenings EU`\n' +
-        '> `casual duo chill, learning Haze`\n' +
-        `${LINE}\nStart a message with \`//\` to chat without making a card.`,
-      )],
+        '> `casual duo, sto imparando Haze`\n' +
+        `${LINE}\nInizia il messaggio con \`//\` per chiacchierare senza creare una card.`,
+      ))],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('lfgui:start').setLabel('Find a party').setEmoji('🔎').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('lfgui:start').setLabel('Cerca squadra').setEmoji('🔎').setStyle(ButtonStyle.Primary),
     )],
   }),
 };
 
 function renderDraft(d) {
-  const size = { 2: 'Duo (2)', 3: 'Trio (3)', 4: 'Squad (4)', 5: 'Five-stack (5)', 6: 'Full party (6)' };
+  const size = { 2: 'Duo (2)', 3: 'Trio (3)', 4: 'Squad (4)', 5: 'Cinque (5)', 6: 'Party intero (6)' };
   return {
-    embeds: [new EmbedBuilder()
-      .setColor(d.mode === 'ranked' ? 0xe74c3c : 0xf39c12)
-      .setTitle('🔎 BUILD YOUR REQUEST')
+    embeds: [withFooter(baseEmbed(d.mode === 'ranked' ? palette.live : palette.warn)
+      .setTitle('Prepara la richiesta')
       .setDescription(
         `${LINE}\n` +
-        `**Mode** · ${d.mode === 'ranked' ? '🏆 Ranked' : '🎲 Casual'}\n` +
+        `**Modalità** · ${d.mode === 'ranked' ? 'Ranked' : 'Casual'}\n` +
         `**Rank** · ${rankLabel(d.rank)}\n` +
         `**Party** · ${size[d.size]}\n` +
-        `**Note** · ${d.note || '*none*'}\n` +
-        `**Ping** · ${d.ping ? '🔔 Cerco Squadra' : 'off'}\n${LINE}`,
-      )],
+        `**Nota** · ${d.note || '*nessuna*'}\n` +
+        `**Ping** · ${d.ping ? 'Hunters' : 'off'}\n${LINE}`,
+      ))],
     components: [
-      new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('lfgui:mode').setPlaceholder('Mode').addOptions(
+      new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('lfgui:mode').setPlaceholder('Modalità').addOptions(
         { label: 'Ranked', value: 'ranked', emoji: '🏆', default: d.mode === 'ranked' },
         { label: 'Casual', value: 'casual', emoji: '🎲', default: d.mode === 'casual' },
       )),
       new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('lfgui:rank').setPlaceholder('Rank').addOptions(
-        { label: 'Any rank', value: 'any', default: !d.rank },
+        { label: 'Qualsiasi rank', value: 'any', default: !d.rank },
         ...ranks.map((r) => ({ label: r.name, value: r.key, default: d.rank === r.key })),
       )),
-      new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('lfgui:size').setPlaceholder('Party size').addOptions(
+      new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('lfgui:size').setPlaceholder('Dimensione party').addOptions(
         ...Object.entries(size).map(([n, label]) => ({ label, value: n, default: d.size === Number(n) })),
       )),
       new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('lfgui:note').setLabel('Add note').setEmoji('📝').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('lfgui:note').setLabel('Aggiungi nota').setEmoji('📝').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('lfgui:ping').setLabel(d.ping ? 'Ping: on' : 'Ping: off').setEmoji('🔔').setStyle(d.ping ? ButtonStyle.Primary : ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('lfgui:post').setLabel('Post request').setEmoji('✅').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('lfgui:cancel').setLabel('Cancel').setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('lfgui:post').setLabel('Pubblica').setEmoji('✅').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('lfgui:cancel').setLabel('Annulla').setStyle(ButtonStyle.Danger),
       ),
     ],
   };
@@ -205,7 +180,7 @@ async function uiInteraction(i) {
   const d = drafts.get(i.user.id);
   if (!d || Date.now() - d.at > DRAFT_TTL) {
     drafts.delete(i.user.id);
-    return i.reply({ content: 'This request expired. Press **Find a party** again.', flags: MessageFlags.Ephemeral });
+    return i.reply({ content: 'Questa richiesta è scaduta. Premi di nuovo **Cerca squadra**.', flags: MessageFlags.Ephemeral });
   }
   d.at = Date.now();
 
@@ -215,9 +190,9 @@ async function uiInteraction(i) {
     case 'lfgui:size': d.size = Number(i.values[0]); break;
     case 'lfgui:ping': d.ping = !d.ping; break;
     case 'lfgui:note':
-      return i.showModal(new ModalBuilder().setCustomId('lfgui:notemodal').setTitle('Add a note').addComponents(
+      return i.showModal(new ModalBuilder().setCustomId('lfgui:notemodal').setTitle('Aggiungi una nota').addComponents(
         new ActionRowBuilder().addComponents(
-          new TextInputBuilder().setCustomId('note').setLabel('Hero, playstyle, schedule...').setStyle(TextInputStyle.Paragraph)
+          new TextInputBuilder().setCustomId('note').setLabel('Eroe, stile, orario...').setStyle(TextInputStyle.Paragraph)
             .setMaxLength(200).setRequired(false).setValue(d.note || ''),
         ),
       ));
@@ -226,11 +201,11 @@ async function uiInteraction(i) {
       break;
     case 'lfgui:cancel':
       drafts.delete(i.user.id);
-      return i.update({ content: 'Cancelled.', embeds: [], components: [] });
+      return i.update({ content: 'Annullata.', embeds: [], components: [] });
     case 'lfgui:post': {
       drafts.delete(i.user.id);
       const msg = await postCard({ guild: i.guild, user: i.user, ...d });
-      return i.update({ content: `✅ Posted: ${msg.url}`, embeds: [], components: [] });
+      return i.update({ content: `Pubblicata: ${msg.url}`, embeds: [], components: [] });
     }
     default: return undefined;
   }
@@ -255,7 +230,7 @@ function init(client) {
       const key = LFG_KEYS.find((k) => channelByKey(m.guild, k)?.id === m.channelId);
       if (!key || m.content.trim().length < 4 || m.content.startsWith('//')) return;
 
-      const req = parseRequest(m.content, m.member, key);
+      const req = parseRequest(m.content, memberRank(m.member), key);
       await postCard({ guild: m.guild, user: m.author, ...req, channel: m.channel });
       await m.delete().catch(() => {});
     } catch (err) {
