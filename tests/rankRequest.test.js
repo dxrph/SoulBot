@@ -15,7 +15,7 @@ test('decode rejects garbage', () => {
   assert.equal(decodeRequest(undefined), null);
 });
 
-const base = { rankKey: 'archon', contentType: 'image/png', alreadyHasRank: false, pendingExists: false };
+const base = { rankKey: 'emissary', contentType: 'image/png', alreadyHasRank: false, pendingExists: false };
 
 test('valid request passes', () => assert.deepEqual(checkRequest(base), { ok: true }));
 test('free rank is refused', () => assert.equal(checkRequest({ ...base, rankKey: 'seeker' }).ok, false));
