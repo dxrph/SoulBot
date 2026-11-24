@@ -12,4 +12,12 @@ async function ensureEveryoneCanStream(guild) {
   return true;
 }
 
-module.exports = { EVERYONE_PERMS, ensureEveryoneCanStream };
+// @everyone must never ping @everyone/@here: removes only that bit, every other permission stays as it is
+async function ensureEveryoneNoMassPing(guild) {
+  const everyone = guild.roles.everyone;
+  if (!everyone.permissions.has(V.MentionEveryone)) return false;
+  await everyone.setPermissions(everyone.permissions.remove(V.MentionEveryone), 'Niente @everyone per tutti');
+  return true;
+}
+
+module.exports = { EVERYONE_PERMS, ensureEveryoneCanStream, ensureEveryoneNoMassPing };
