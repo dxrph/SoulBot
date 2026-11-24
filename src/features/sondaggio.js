@@ -40,14 +40,12 @@ async function run(i) {
   }
 }
 
-function init(client) {
-  client.on('interactionCreate', async (i) => {
-    try {
-      if (i.isChatInputCommand() && i.commandName === 'sondaggio') return await run(i);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+async function onInteraction(i) {
+  try {
+    if (i.isChatInputCommand() && i.commandName === 'sondaggio') return await run(i);
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-module.exports = { init, commands };
+module.exports = { onInteraction, commands };

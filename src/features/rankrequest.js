@@ -84,17 +84,15 @@ async function review(i, approve) {
     description: `<@${req.userId}> · ${rank.name} · da <@${i.user.id}>` });
 }
 
-function init(client) {
-  client.on('interactionCreate', async (i) => {
-    try {
-      if (i.isChatInputCommand() && i.commandName === 'verifica-rank') return await request(i);
-      if (i.isButton() && i.customId === 'rankq:ok') return await review(i, true);
-      if (i.isButton() && i.customId === 'rankq:no') return await review(i, false);
-    } catch (err) {
-      console.error(err);
-      if (i.deferred || i.replied) await i.editReply({ content: 'Qualcosa è andato storto. Riprova o chiedi allo staff.' }).catch(() => {});
-    }
-  });
+async function onInteraction(i) {
+  try {
+    if (i.isChatInputCommand() && i.commandName === 'verifica-rank') return await request(i);
+    if (i.isButton() && i.customId === 'rankq:ok') return await review(i, true);
+    if (i.isButton() && i.customId === 'rankq:no') return await review(i, false);
+  } catch (err) {
+    console.error(err);
+    if (i.deferred || i.replied) await i.editReply({ content: 'Qualcosa è andato storto. Riprova o chiedi allo staff.' }).catch(() => {});
+  }
 }
 
-module.exports = { init, commands };
+module.exports = { onInteraction, commands };
