@@ -8,57 +8,65 @@
 // The streamer. Leave a link empty ('') to hide it from the social panel.
 const streamer = {
   name: 'ONYZUK4',
-  twitch: 'onyzuk4', // Twitch login: live alerts and /live use it
+  twitch: 'onyzuk4',
+  kick: 'onyzuk4',
   motto: 'Egoista. Manca poco al Radiant: credi in me anche tu.',
-  color: 0xe11d2a, // red of the channel banner
+  color: 0x4FC3F7, // Infinity blue — live alerts use the live red instead
   links: {
     twitch: 'https://twitch.tv/onyzuk4',
-    tiktok: process.env.TIKTOK_URL ?? '',
-    instagram: process.env.INSTAGRAM_URL ?? '',
-    youtube: process.env.YOUTUBE_URL ?? '',
-    x: process.env.X_URL ?? '',
+    kick: process.env.KICK_URL || 'https://kick.com/onyzuk4',
+    youtube: process.env.YOUTUBE_URL || 'https://youtube.com/@Onyzuk4',
+    instagram: process.env.INSTAGRAM_URL || 'https://instagram.com/onyzuka.wrld',
+    x: process.env.X_URL || 'https://x.com/onyzuk4',
+    tiktok: process.env.TIKTOK_URL || '',
   },
 };
 
 const roles = [
   // Staff
-  { key: 'owner', name: '👑 ONYZUK4', color: 0xe11d2a, hoist: true, admin: true, old: ['👑 The Hidden King'] },
-  { key: 'admin', name: '🩸 Braccio Destro', color: 0xb71c1c, hoist: true, admin: true, old: ['🔱 Hand of the Patron'] },
-  { key: 'mod', name: '🛡️ Guardiani', color: 0xff5252, hoist: true, old: ['⚔️ Wardens'],
+  { key: 'owner', name: 'Hokage · ONYZUK4', color: 0x4FC3F7, hoist: true, admin: true,
+    old: ['👑 ONYZUK4', '👑 The Hidden King'] },
+  { key: 'admin', name: 'Hashira', color: 0x7C4DFF, hoist: true, admin: true,
+    old: ['🩸 Braccio Destro', '🔱 Hand of the Patron'] },
+  { key: 'mod', name: 'Shinigami', color: 0xC77DFF, hoist: true,
+    old: ['🛡️ Guardiani', '⚔️ Wardens'],
     perms: ['KickMembers', 'BanMembers', 'ManageMessages', 'ModerateMembers', 'MoveMembers', 'MuteMembers', 'DeafenMembers'] },
-  { key: 'coach', name: '🎓 Maestri', color: 0x9b59b6, hoist: true, old: ['🔮 Sage Mentors'] },
-  { key: 'bot', name: '⚙️ Bot', color: 0x95a5a6, old: ['⚙️ Automatons'] },
+  { key: 'coach', name: 'Sensei', color: 0x7C4DFF, hoist: true,
+    old: ['🎓 Maestri', '🔮 Sage Mentors'] },
+  { key: 'bot', name: 'Shikigami', color: 0x607D8B,
+    old: ['⚙️ Bot', '⚙️ Automatons'] },
 
   // Supporters of the channel (given by hand or by a Twitch-link bot)
-  { key: 'vip', name: '💎 VIP della Live', color: 0xff4081, hoist: true },
-  { key: 'sub', name: '💜 Sub', color: 0x9146ff, hoist: true },
+  { key: 'vip', name: 'Ace', color: 0xC77DFF, hoist: true, old: ['💎 VIP della Live'] },
+  { key: 'sub', name: 'Nakama', color: 0x7C4DFF, hoist: true, old: ['💜 Sub'] },
 
-  // Ranks (highest first)
-  { key: 'eternus', name: '🌌 Eternus', color: 0xff4d6d, hoist: true, group: 'rank', verify: true },
-  { key: 'ascendant', name: '🪽 Ascendant', color: 0xff8fa3, hoist: true, group: 'rank', verify: true },
-  { key: 'phantom', name: '👻 Phantom', color: 0xb388ff, hoist: true, group: 'rank', verify: true },
-  { key: 'oracle', name: '👁️ Oracle', color: 0x7c4dff, hoist: true, group: 'rank', verify: true },
-  { key: 'archon', name: '⚜️ Archon', color: 0x40c4ff, hoist: true, group: 'rank', verify: true },
-  { key: 'emissary', name: '🕯️ Emissary', color: 0x26c6da, hoist: true, group: 'rank', verify: true },
-  { key: 'ritualist', name: '🩸 Ritualist', color: 0x4db6ac, hoist: true, group: 'rank' },
-  { key: 'arcanist', name: '📖 Arcanist', color: 0x81c784, hoist: true, group: 'rank' },
-  { key: 'alchemist', name: '⚗️ Alchemist', color: 0xaed581, hoist: true, group: 'rank' },
-  { key: 'seeker', name: '🧭 Seeker', color: 0xffd54f, hoist: true, group: 'rank' },
-  { key: 'initiate', name: '🕳️ Initiate', color: 0xbcaaa4, hoist: true, group: 'rank' },
+  // Ranks (highest first) — official Deadlock names, emoji prefix removed
+  { key: 'eternus', name: 'Eternus', color: 0xC77DFF, hoist: true, group: 'rank', verify: true, old: ['🌌 Eternus'] },
+  { key: 'ascendant', name: 'Ascendant', color: 0xB388FF, hoist: true, group: 'rank', verify: true, old: ['🪽 Ascendant'] },
+  { key: 'phantom', name: 'Phantom', color: 0x7C4DFF, hoist: true, group: 'rank', verify: true, old: ['👻 Phantom'] },
+  { key: 'oracle', name: 'Oracle', color: 0x4FC3F7, hoist: true, group: 'rank', verify: true, old: ['👁️ Oracle'] },
+  { key: 'archon', name: 'Archon', color: 0x40C4FF, hoist: true, group: 'rank', verify: true, old: ['⚜️ Archon'] },
+  { key: 'emissary', name: 'Emissary', color: 0x26C6DA, hoist: true, group: 'rank', verify: true, old: ['🕯️ Emissary'] },
+  { key: 'ritualist', name: 'Ritualist', color: 0x4DB6AC, hoist: true, group: 'rank', old: ['🩸 Ritualist'] },
+  { key: 'arcanist', name: 'Arcanist', color: 0x81C784, hoist: true, group: 'rank', old: ['📖 Arcanist'] },
+  { key: 'alchemist', name: 'Alchemist', color: 0xAED581, hoist: true, group: 'rank', old: ['⚗️ Alchemist'] },
+  { key: 'seeker', name: 'Seeker', color: 0xFFD54F, hoist: true, group: 'rank', old: ['🧭 Seeker'] },
+  { key: 'initiate', name: 'Initiate', color: 0xBCAAA4, hoist: true, group: 'rank', old: ['🕳️ Initiate'] },
 
   // Regions
-  { key: 'eu', name: '🏰 Old World (EU)', color: 0x3498db, group: 'region' },
-  { key: 'na', name: '🗽 New World (NA)', color: 0x2ecc71, group: 'region' },
-  { key: 'asia', name: '🏯 Far East (Asia)', color: 0xe91e63, group: 'region' },
+  { key: 'eu', name: 'EU · West Blue', color: 0x4FC3F7, group: 'region', old: ['🏰 Old World (EU)'] },
+  { key: 'na', name: 'NA · East Blue', color: 0x2ECC71, group: 'region', old: ['🗽 New World (NA)'] },
+  { key: 'asia', name: 'Asia · Grand Line', color: 0xC77DFF, group: 'region', old: ['🏯 Far East (Asia)'] },
 
   // Base and utility
-  { key: 'player', name: '🔥 Egoisti', color: 0xff6b6b, old: ['🔥 Soulbound'] },
-  { key: 'live', name: '🔴 Notifiche Live', color: 0xe11d2a, group: 'extra' },
-  { key: 'lfg', name: '🐺 Cerco Squadra', color: 0xf39c12, group: 'extra', old: ['🐺 Hunting for Party'] },
-  { key: 'muted', name: '🔇 Silenziato', color: 0x607d8b, old: ['🔇 Silenced by the Void'] },
+  { key: 'player', name: 'Egoisti', color: 0x4FC3F7, old: ['🔥 Egoisti', '🔥 Soulbound'] },
+  { key: 'live', name: 'Scouter', color: 0xE11D2A, group: 'extra', old: ['🔴 Notifiche Live'] },
+  { key: 'lfg', name: 'Hunters', color: 0x7C4DFF, group: 'extra', old: ['🐺 Cerco Squadra', '🐺 Hunting for Party'] },
+  { key: 'muted', name: 'Sigillato', color: 0x607D8B, old: ['🔇 Silenziato', '🔇 Silenced by the Void'] },
 ];
 
 // vis: 'public' = everyone, 'member' = Egoisti only, 'staff' = staff only
+// Channel and voice names are left unchanged on purpose.
 const categories = [
   {
     name: '🚪 L\'INGRESSO', vis: 'public', old: ['📌 THE GATE'],
@@ -66,13 +74,12 @@ const categories = [
       { name: '✅┃verifica', type: 'text', readOnly: true, special: 'verify', old: ['✅┃verify'] },
       { name: '👋┃benvenuti', type: 'text', readOnly: true, special: 'welcome', old: ['🚪┃welcome'] },
       { name: '📜┃regole', type: 'text', readOnly: true, special: 'rules', old: ['📜┃rules'] },
-      { name: '📢┃annunci', type: 'text', readOnly: true, old: ['📢┃announcements'] },
+      { name: '📢┃annunci', type: 'text', readOnly: true, special: 'announcements', old: ['📢┃announcements'] },
       { name: '🎭┃ruoli', type: 'text', readOnly: true, special: 'roles', old: ['🎭┃get-roles'] },
       { name: '🎫┃supporto', type: 'text', readOnly: true, special: 'support', old: ['🎫┃support'] },
     ],
   },
   {
-    // Public on purpose: people arriving from Twitch see the stream and the socials before verifying
     name: '🔴 ONYZUK4 LIVE', vis: 'public',
     channels: [
       { name: '🔴┃live-ora', type: 'text', readOnly: true, special: 'live' },
@@ -85,7 +92,7 @@ const categories = [
     channels: [
       { name: '💬┃generale', type: 'text', old: ['💬┃general'] },
       { name: '🙋┃presentati', type: 'text', old: ['👋┃introductions'] },
-      { name: '🎬┃clip-della-live', type: 'text', old: ['🎬┃clips-and-highlights'] },
+      { name: '🎬┃clip-della-live', type: 'text', special: 'clips', old: ['🎬┃clips-and-highlights'] },
       { name: '💡┃idee-per-le-live', type: 'text' },
       { name: '😂┃meme', type: 'text', old: ['😂┃memes'] },
       { name: '🤖┃comandi-bot', type: 'text', old: ['🤖┃bot-commands'] },
@@ -100,7 +107,6 @@ const categories = [
       { name: '📰┃patch-notes', type: 'text', readOnly: true, special: 'patches' },
       { name: '📰┃patch-notes-ita', type: 'text', readOnly: true, special: 'patches_it' },
       { name: '🎟️┃invito-al-gioco', type: 'text', readOnly: true, special: 'gameinvite', old: ['🎟️┃game-invite'] },
-      // Forums filled by the bot (one post per hero). noPosts: members reply inside posts, only staff/bot create them
       { name: '🦸┃hero-guides', type: 'forum', noPosts: true, special: 'heroes_en' },
       { name: '🛒┃build-guides', type: 'forum', noPosts: true, special: 'builds_en' },
       { name: '🇮🇹┃guida-eroi', type: 'forum', noPosts: true, special: 'heroes_it' },
@@ -118,12 +124,10 @@ const categories = [
     ],
   },
   {
-    // Untouched: same voice rooms as before
     name: '⚔️ THE BATTLEFIELD', vis: 'member',
     channels: [
       { name: '➕ Create Room', type: 'voice', special: 'create' },
       { name: '🟢 Lobby', type: 'voice' },
-      // Match rooms: the bot keeps exactly one empty room per group (see features/voice.js)
       { name: '🏆 Ranked 1 (6)', type: 'voice', limit: 6 },
       { name: '🏆 Ranked 2 (6)', type: 'voice', limit: 6 },
       { name: '🎲 Casual 1 (6)', type: 'voice', limit: 6 },
@@ -152,7 +156,6 @@ const categories = [
       { name: '🛠️ Staff Voice', type: 'voice' },
     ],
   },
-  // Ticket channels are created here by the bot
   { name: '🎫 TICKETS', vis: 'staff', channels: [] },
 ];
 
