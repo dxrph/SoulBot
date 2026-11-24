@@ -13,10 +13,22 @@ const features = [
   require('./lfg'),
   require('./patches'),
   require('./guides'),
+  require('./clips'),
+  require('./anime'),
+  require('./sondaggio'),
 ];
 
-// Panel titles of the old Deadlock-only design: /refresh-panels deletes them so nothing is doubled
-const OLD_TITLES = ['🔥 Become Soulbound', '📜 THE LAW OF THE HIDDEN KING', "📜 LA LEGGE DELL'ARCHMOTHER"];
+const OLD_TITLES = [
+  '🔥 Become Soulbound',
+  '📜 THE LAW OF THE HIDDEN KING',
+  "📜 LA LEGGE DELL'ARCHMOTHER",
+  '🎭 CHOOSE YOUR PATH',
+  '🎫 Need help?',
+  '🔎 FIND YOUR PARTY',
+  '🎟️ GET INTO THE GAME',
+  '🔥 ENTRA NELLA COMMUNITY DI ONYZUK4',
+  '📜 LE REGOLE DI ONYZUK4',
+];
 
 module.exports = {
   features,

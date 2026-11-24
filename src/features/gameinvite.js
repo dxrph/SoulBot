@@ -2,75 +2,69 @@ const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
 const { roleMap, channelByKey, isStaff } = require('../util');
+const { palette, LINE, withFooter, baseEmbed } = require('../style');
 
-// Game access requests: someone without Deadlock access asks for an invite,
-// a member who can invite friends claims the request and sends it through Steam.
-
-const LINE = '━━━━━━━━━━━━━━━━━━━━━━━━━━';
-const STATUS = { open: '🟡 Open', claimed: '🟠 Claimed', done: '🟢 Invite sent', cancelled: '⚪ Cancelled' };
+const STATUS = { open: 'Aperto', claimed: 'Preso in carico', done: 'Invito inviato', cancelled: 'Annullato' };
 
 const panels = {
   gameinvite: () => ({
-    embeds: [new EmbedBuilder()
-      .setColor(0xf1c40f)
-      .setTitle('🎟️ GET INTO THE GAME')
+    embeds: [withFooter(new EmbedBuilder()
+      .setColor(palette.warn)
+      .setTitle('Entra nel gioco')
       .setDescription(
-        `No access to Deadlock yet? Ask the community for an invite.\n${LINE}\n` +
-        '**🙋 Need an invite** · press **Request invite** and leave your Steam profile link or friend code.\n' +
-        '**🎁 Can invite friends** · find a request below and press **I\'ll invite them**, then send the invite through Steam.\n' +
+        `Non hai ancora accesso a Deadlock? Chiedi un invito alla community.\n${LINE}\n` +
+        '**Hai bisogno di un invito** · premi **Chiedi invito** e lascia il link del tuo profilo Steam o il codice amico.\n' +
+        '**Puoi invitare amici** · trova una richiesta qui sotto e premi **Li invito io**, poi manda l\'invito da Steam.\n' +
         `${LINE}\n` +
-        '⚠️ Invites are free. **Never pay for one**, and never share your password or Steam login with anyone.\n\n' +
-        '*Non hai ancora accesso al gioco? Premi **Request invite** e lascia il link del tuo profilo Steam. Chi può invitare amici accetterà la tua richiesta.*',
-      )],
+        '⚠️ Gli inviti sono gratis. **Non pagare mai** e non condividere password o login Steam.\n\n' +
+        '*Need a Deadlock invite? Press the button and leave your Steam profile link.*',
+      ))],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('gi:request').setLabel('Request invite').setEmoji('🎟️').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('gi:request').setLabel('Chiedi invito').setEmoji('🎟️').setStyle(ButtonStyle.Primary),
     )],
   }),
 };
 
 function card({ requester, steam, note, status, claimer }) {
   const open = status === 'open' || status === 'claimed';
-  const e = new EmbedBuilder()
-    .setColor({ open: 0xf1c40f, claimed: 0xe67e22, done: 0x2ecc71, cancelled: 0x95a5a6 }[status])
-    .setTitle('🎟️ Game invite request')
+  const e = withFooter(baseEmbed({ open: palette.warn, claimed: 0xe67e22, done: palette.ok, cancelled: palette.muted }[status])
+    .setTitle('Richiesta invito al gioco')
     .addFields(
-      { name: 'Player', value: `<@${requester}>`, inline: true },
-      { name: 'Status', value: STATUS[status] + (claimer ? ` by <@${claimer}>` : ''), inline: true },
+      { name: 'Giocatore', value: `<@${requester}>`, inline: true },
+      { name: 'Stato', value: STATUS[status] + (claimer ? ` da <@${claimer}>` : ''), inline: true },
       { name: 'Steam', value: steam },
-    );
-  if (note) e.addFields({ name: 'Note', value: note });
+    ));
+  if (note) e.addFields({ name: 'Nota', value: note });
   return {
     embeds: [e],
     components: open ? [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`gi:claim:${requester}`).setLabel("I'll invite them").setEmoji('🎁').setStyle(ButtonStyle.Success).setDisabled(status === 'claimed'),
-      new ButtonBuilder().setCustomId(`gi:done:${requester}`).setLabel('Invite sent').setEmoji('✅').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId(`gi:cancel:${requester}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`gi:claim:${requester}`).setLabel('Li invito io').setEmoji('🎁').setStyle(ButtonStyle.Success).setDisabled(status === 'claimed'),
+      new ButtonBuilder().setCustomId(`gi:done:${requester}`).setLabel('Invito inviato').setEmoji('✅').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(`gi:cancel:${requester}`).setLabel('Annulla').setStyle(ButtonStyle.Secondary),
     )] : [],
   };
 }
 
-// The request lives in its message: values come back from the embed fields
 function read(message) {
   const f = Object.fromEntries(message.embeds[0].fields.map((x) => [x.name, x.value]));
   return {
-    requester: f.Player.match(/\d+/)[0],
+    requester: (f.Giocatore || f.Player).match(/\d+/)[0],
     steam: f.Steam,
-    note: f.Note ?? null,
-    claimer: f.Status.match(/<@(\d+)>/)?.[1] ?? null,
+    note: f.Nota ?? f.Note ?? null,
+    claimer: (f.Stato || f.Status).match(/<@(\d+)>/)?.[1] ?? null,
   };
 }
 
-// Steam profile link or friend code (6-10 digits)
 const validSteam = (s) => /steamcommunity\.com\/(id|profiles)\/\S+/i.test(s) || /^\d{6,10}$/.test(s.replace(/\s/g, ''));
 
 async function openRequest(i) {
-  return i.showModal(new ModalBuilder().setCustomId('gi:modal').setTitle('Request a game invite').addComponents(
+  return i.showModal(new ModalBuilder().setCustomId('gi:modal').setTitle('Chiedi un invito al gioco').addComponents(
     new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('steam').setLabel('Steam profile link or friend code').setStyle(TextInputStyle.Short)
-        .setPlaceholder('https://steamcommunity.com/id/yourname').setMaxLength(100).setRequired(true),
+      new TextInputBuilder().setCustomId('steam').setLabel('Link Steam o codice amico').setStyle(TextInputStyle.Short)
+        .setPlaceholder('https://steamcommunity.com/id/tuonome').setMaxLength(100).setRequired(true),
     ),
     new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('note').setLabel('Note (optional)').setStyle(TextInputStyle.Paragraph)
+      new TextInputBuilder().setCustomId('note').setLabel('Nota (facoltativa)').setStyle(TextInputStyle.Paragraph)
         .setMaxLength(200).setRequired(false),
     ),
   ));
@@ -80,18 +74,17 @@ async function submitRequest(i) {
   const steam = i.fields.getTextInputValue('steam').trim();
   const note = i.fields.getTextInputValue('note').trim() || null;
   if (!validSteam(steam)) {
-    return i.reply({ content: '❌ Use your Steam profile link (steamcommunity.com/id/... or /profiles/...) or your friend code.', flags: MessageFlags.Ephemeral });
+    return i.reply({ content: 'Usa il link del profilo Steam (steamcommunity.com/id/... o /profiles/...) o il codice amico.', flags: MessageFlags.Ephemeral });
   }
 
   const channel = channelByKey(i.guild, 'gameinvite') ?? i.channel;
-  // one open request per player
   const recent = await channel.messages.fetch({ limit: 100 }).catch(() => null);
   const mine = recent && [...recent.values()].find((m) => m.author.id === i.client.user.id
     && m.components.some((row) => row.components.some((c) => c.customId === `gi:claim:${i.user.id}`)));
-  if (mine) return i.reply({ content: `You already have an open request: ${mine.url}`, flags: MessageFlags.Ephemeral });
+  if (mine) return i.reply({ content: `Hai già una richiesta aperta: ${mine.url}`, flags: MessageFlags.Ephemeral });
 
   const msg = await channel.send({ ...card({ requester: i.user.id, steam, note, status: 'open' }), allowedMentions: { parse: [] } });
-  await i.reply({ content: `✅ Request posted: ${msg.url}\nSomeone with invites will pick it up. Watch your Steam friend requests.`, flags: MessageFlags.Ephemeral });
+  await i.reply({ content: `Richiesta pubblicata: ${msg.url}\nQualcuno con gli inviti la prenderà in carico. Controlla le richieste di amicizia su Steam.`, flags: MessageFlags.Ephemeral });
 }
 
 async function handleButton(i) {
@@ -100,19 +93,19 @@ async function handleButton(i) {
   const staff = isStaff(i.member);
 
   if (action === 'claim') {
-    if (i.user.id === requesterId) return i.reply({ content: 'You cannot claim your own request.', flags: MessageFlags.Ephemeral });
+    if (i.user.id === requesterId) return i.reply({ content: 'Non puoi prendere in carico la tua richiesta.', flags: MessageFlags.Ephemeral });
     const isPlayer = i.member.roles.cache.has(roleMap(i.guild).player?.id);
-    if (!isPlayer && !staff) return i.reply({ content: 'Verify first to help others.', flags: MessageFlags.Ephemeral });
-    if (state.claimer) return i.reply({ content: 'Someone already took this one.', flags: MessageFlags.Ephemeral });
+    if (!isPlayer && !staff) return i.reply({ content: 'Prima verifica il tuo account per aiutare gli altri.', flags: MessageFlags.Ephemeral });
+    if (state.claimer) return i.reply({ content: 'Qualcun altro l\'ha già presa in carico.', flags: MessageFlags.Ephemeral });
     await i.update({ ...card({ ...state, status: 'claimed', claimer: i.user.id }), allowedMentions: { parse: [] } });
     return i.channel.send({
-      content: `🎁 <@${requesterId}> <@${i.user.id}> will send you a game invite. Check your Steam friend requests and in-game invites.`,
+      content: `<@${requesterId}> <@${i.user.id}> ti manderà un invito. Controlla le richieste su Steam e gli inviti in gioco.`,
       allowedMentions: { users: [requesterId, i.user.id] },
     });
   }
 
   const allowed = i.user.id === requesterId || i.user.id === state.claimer || staff;
-  if (!allowed) return i.reply({ content: 'Only the requester, the person inviting them or staff can do this.', flags: MessageFlags.Ephemeral });
+  if (!allowed) return i.reply({ content: 'Solo chi ha chiesto, chi invita o lo staff può farlo.', flags: MessageFlags.Ephemeral });
   const status = action === 'done' ? 'done' : 'cancelled';
   return i.update({ ...card({ ...state, status }), allowedMentions: { parse: [] } });
 }
