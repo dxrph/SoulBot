@@ -90,7 +90,7 @@ const socialsPayload = () => ({
     .setDescription(
       `*${streamer.motto}*\n${LINE}\n` +
       socialLinks().map(([k, url]) => `${LABELS[k]?.[1] ?? '🔗'} **${LABELS[k]?.[0] ?? k}** · ${url}`).join('\n') +
-      `\n${LINE}\nSegui, attiva le notifiche e porta un amico: ogni follow ci avvicina al Radiant.`,
+      `\n${LINE}\nSegui, attiva le notifiche e porta un amico: ogni follow ci avvicina all'Eternus.`,
     ))],
   components: [new ActionRowBuilder().addComponents(
     ...socialLinks().slice(0, 5).map(([k, url]) => new ButtonBuilder()
@@ -99,17 +99,6 @@ const socialsPayload = () => ({
 });
 
 const panels = {
-  live: () => ({
-    embeds: [withFooter(baseEmbed(palette.primary)
-      .setTitle('Quando sono in live lo sai qui')
-      .setDescription(
-        `Ogni volta che vado in live su Twitch o su Kick il bot lo scrive in questo canale.\n${LINE}\n` +
-        'Vuoi il ping? Vai in **ruoli**, premi **Notifiche** e scegli **Scouter**.\n' +
-        'Scrivi `/live` ovunque per vedere se sono online adesso.',
-      ))],
-    components: [linkButton(TWITCH_URL, 'Segui su Twitch'), linkButton(KICK_URL, 'Segui su Kick', '🟢')].slice(0, 1)
-      .concat(KICK_URL ? [] : []),
-  }),
   socials: socialsPayload,
   schedule: (guild) => {
     const anime = guild ? require('../store').getAnime(guild.id) : null;
@@ -134,7 +123,7 @@ const panels = {
   },
 };
 
-// Fix live panel: two link buttons in one row
+// Live panel: Twitch and Kick buttons side by side (the old version cut the row to one button with .slice(0, 1))
 panels.live = () => ({
   embeds: [withFooter(baseEmbed(palette.primary)
     .setTitle('Quando sono in live lo sai qui')
@@ -219,50 +208,48 @@ const commands = [
   guildSlash('social', `Tutti i social di ${streamer.name}`),
 ].map((c) => c.toJSON());
 
-function init(client) {
-  client.on('interactionCreate', async (i) => {
-    if (!i.isChatInputCommand()) return;
-    try {
-      if (i.commandName === 'social') return await i.reply({ ...socialsPayload(), flags: MessageFlags.Ephemeral });
-      if (i.commandName !== 'live') return;
-      await i.deferReply({ flags: MessageFlags.Ephemeral });
-      const [twitch, kick] = await Promise.all([twitchStatus(), kickStatus()]);
-      if (twitch === null && kick === null) {
-        return await i.editReply('Non riesco a controllare Twitch e Kick adesso, riprova tra poco.');
-      }
-      const embeds = [];
-      const components = [];
-      if (twitch?.live) {
-        embeds.push(liveEmbed(twitch, 'twitch'));
-        components.push(linkButton(TWITCH_URL, 'Guarda su Twitch'));
-      }
-      if (kick?.live) {
-        embeds.push(liveEmbed(kick, 'kick'));
-        components.push(linkButton(KICK_URL, 'Guarda su Kick', '🟢'));
-      }
-      if (embeds.length) return await i.editReply({ embeds, components });
-      await i.editReply({
-        content: `${streamer.name} è offline. Segui Twitch o Kick per sapere quando torna!`,
-        components: [new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setLabel('Segui su Twitch').setEmoji('🔴').setStyle(ButtonStyle.Link).setURL(TWITCH_URL),
-          ...(KICK_URL ? [new ButtonBuilder().setLabel('Segui su Kick').setEmoji('🟢').setStyle(ButtonStyle.Link).setURL(KICK_URL)] : []),
-        )],
-      });
-    } catch (err) {
-      console.error(err);
+async function onInteraction(i) {
+  if (!i.isChatInputCommand()) return;
+  try {
+    if (i.commandName === 'social') return await i.reply({ ...socialsPayload(), flags: MessageFlags.Ephemeral });
+    if (i.commandName !== 'live') return;
+    await i.deferReply({ flags: MessageFlags.Ephemeral });
+    const [twitch, kick] = await Promise.all([twitchStatus(), kickStatus()]);
+    if (twitch === null && kick === null) {
+      return await i.editReply('Non riesco a controllare Twitch e Kick adesso, riprova tra poco.');
     }
-  });
-
-  client.once('clientReady', () => {
-    let busy = false;
-    const run = async () => {
-      if (busy) return;
-      busy = true;
-      try { await check(client); } catch (e) { console.error(e); } finally { busy = false; }
-    };
-    setTimeout(run, 15_000);
-    setInterval(run, INTERVAL_MS).unref();
-  });
+    const embeds = [];
+    const components = [];
+    if (twitch?.live) {
+      embeds.push(liveEmbed(twitch, 'twitch'));
+      components.push(linkButton(TWITCH_URL, 'Guarda su Twitch'));
+    }
+    if (kick?.live) {
+      embeds.push(liveEmbed(kick, 'kick'));
+      components.push(linkButton(KICK_URL, 'Guarda su Kick', '🟢'));
+    }
+    if (embeds.length) return await i.editReply({ embeds, components });
+    await i.editReply({
+      content: `${streamer.name} è offline. Segui Twitch o Kick per sapere quando torna!`,
+      components: [new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setLabel('Segui su Twitch').setEmoji('🔴').setStyle(ButtonStyle.Link).setURL(TWITCH_URL),
+        ...(KICK_URL ? [new ButtonBuilder().setLabel('Segui su Kick').setEmoji('🟢').setStyle(ButtonStyle.Link).setURL(KICK_URL)] : []),
+      )],
+    });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-module.exports = { init, panels, commands };
+function onReady(client) {
+  let busy = false;
+  const run = async () => {
+    if (busy) return;
+    busy = true;
+    try { await check(client); } catch (e) { console.error(e); } finally { busy = false; }
+  };
+  setTimeout(run, 15_000);
+  setInterval(run, INTERVAL_MS).unref();
+}
+
+module.exports = { onInteraction, onReady, panels, commands };
