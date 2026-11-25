@@ -2,12 +2,12 @@
 
 Il bot del server Discord di **[ONYZUK4](https://twitch.tv/onyzuk4)**: il posto dove la community si ritrova per guardare le live, trovare ONYZUK4 su tutti i social e giocare insieme.
 
-> *Egoista. Manca poco all'Eternus: credi in me anche tu.* (motto proposto, in attesa di conferma)
+> *Egoista. Manca poco all'Eternus: credi in me anche tu.*
 
 ## 🔴 Live e social
 - **Notifiche live** in `🔴┃live-ora`: appena ONYZUK4 va in live su Twitch il bot pubblica titolo, gioco e anteprima, tagga chi ha **🔴 Notifiche Live** e segna il post come finito quando la live si chiude (controllo ogni 2 minuti, nessuna chiave Twitch richiesta)
 - `/live`: ONYZUK4 è in live adesso?
-- `/social`: tutti i link di ONYZUK4 (Twitch, Kick, YouTube, Instagram, X)
+- `/social`: tutti i link di ONYZUK4 (Twitch, Kick, YouTube, Instagram, X, TikTok)
 - `/sondaggio`: lo staff crea un sondaggio per la live
 - `/anime` e `/anime-off`: pannello “Anime della settimana” in `📅┃programma`
 - `/pulisci-eroi`: lo staff toglie i ruoli eroe non più usati dal gioco
@@ -79,7 +79,7 @@ DRY_RUN=1 npm start   # controllo a secco: carica i moduli e i comandi senza log
 Spegni il bot in locale mentre gira su Railway, altrimenti ogni risposta arriva doppia.
 
 ## 🔧 Variabili facoltative
-- `KICK_URL`, `TIKTOK_URL`, `INSTAGRAM_URL`, `YOUTUBE_URL`, `X_URL`: link nel pannello social. Se sono vuoti, Kick, YouTube, Instagram e X usano i link di default di ONYZUK4; TikTok compare solo se lo imposti. Twitch c'è sempre.
+- `KICK_URL`, `TIKTOK_URL`, `INSTAGRAM_URL`, `YOUTUBE_URL`, `X_URL`: link nel pannello social. Se sono vuoti si usano i link di default di ONYZUK4 (TikTok: @itsonyzuka). Twitch c'è sempre.
 - `ANTHROPIC_API_KEY`: traduzione delle patch notes più precisa (i termini del gioco restano in inglese). Senza, si usa il traduttore gratuito di Google.
 - `TRANSLATE_MODEL`: modello Claude per la traduzione (predefinito `claude-haiku-5-5`).
 - `DRY_RUN=1`: solo in locale, avvio a secco senza login.

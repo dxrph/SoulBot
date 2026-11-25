@@ -10,7 +10,6 @@ const streamer = {
   name: 'ONYZUK4',
   twitch: 'onyzuk4',
   kick: 'onyzuk4',
-  // PROPOSTA in attesa di conferma di Onyzuka (il vecchio motto parlava del Radiant di Valorant)
   motto: 'Egoista. Manca poco all\'Eternus: credi in me anche tu.',
   color: 0x4FC3F7, // Infinity blue — live alerts use the live red instead
   links: {
@@ -19,8 +18,7 @@ const streamer = {
     youtube: process.env.YOUTUBE_URL || 'https://youtube.com/@Onyzuk4',
     instagram: process.env.INSTAGRAM_URL || 'https://instagram.com/onyzuka.wrld',
     x: process.env.X_URL || 'https://x.com/onyzuk4',
-    // TODO: link TikTok non ancora confermato da Onyzuka. Non inventarlo: va messo qui o in TIKTOK_URL.
-    tiktok: process.env.TIKTOK_URL || '',
+    tiktok: process.env.TIKTOK_URL || 'https://www.tiktok.com/@itsonyzuka',
   },
 };
 

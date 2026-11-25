@@ -92,10 +92,11 @@ const socialsPayload = () => ({
       socialLinks().map(([k, url]) => `${LABELS[k]?.[1] ?? '🔗'} **${LABELS[k]?.[0] ?? k}** · ${url}`).join('\n') +
       `\n${LINE}\nSegui, attiva le notifiche e porta un amico: ogni follow ci avvicina all'Eternus.`,
     ))],
-  components: [new ActionRowBuilder().addComponents(
-    ...socialLinks().slice(0, 5).map(([k, url]) => new ButtonBuilder()
+  // Discord allows 5 buttons per row: with TikTok there are 6 links, so split them over two rows
+  components: [socialLinks().slice(0, 5), socialLinks().slice(5, 10)].filter((r) => r.length).map((row) => new ActionRowBuilder().addComponents(
+    ...row.map(([k, url]) => new ButtonBuilder()
       .setLabel(LABELS[k]?.[0] ?? k).setEmoji(LABELS[k]?.[1] ?? '🔗').setStyle(ButtonStyle.Link).setURL(url)),
-  )],
+  )),
 });
 
 const panels = {
