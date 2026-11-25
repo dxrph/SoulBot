@@ -4,6 +4,7 @@ const NAMES = [
   'live', 'verify', 'roles', 'rankrequest', 'rules', 'voice', 'say', 'modlog', 'security', 'tickets',
   'gameinvite', 'lfg', 'patches', 'guides', 'clips', 'anime', 'sondaggio', 'stats',
   'levels', 'events', 'soundboard',
+  'predictions', 'liveroom', 'build', 'challenge', 'quiz', 'reminders',
 ];
 // eslint-disable-next-line global-require, import/no-dynamic-require
 const features = NAMES.map((name) => Object.assign(require(`./${name}`), { name }));

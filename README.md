@@ -22,6 +22,13 @@ Il bot del server Discord di **[ONYZUK4](https://twitch.tv/onyzuk4)**: il posto 
 - `/giveaway` (staff): pulsante Partecipa ed estrazione automatica. Un riavvio del bot annulla i giveaway in corso
 - `/evento-live` (staff): crea un evento Discord per la prossima live, col link Twitch (es. `domani 21:30`, ora di Bruxelles)
 - **📊 STATISTICHE**: canali bloccati con 👥 Membri, 💜 Follower Twitch e 🎯 Affiliate (N/50), aggiornati ogni 10 minuti
+- `/predizione` (staff): "Vinco o perdo?" con i pulsanti Vince/Perde, chiusura dei voti (automatica dopo 5 minuti o a mano) e verdetto dello staff. Chi indovina prende XP. Un riavvio del bot annulla la predizione aperta
+- **Dominio Espanso**: ruolo temporaneo per chi è in `📺 Guardiamo la Live` mentre ONYZUK4 è in live; sparisce quando esci o quando la live finisce
+- `/build <eroe>`: la build più votata dal forum `🛒┃build-guides` (o `🇮🇹┃guida-build` con `lingua: italiano`), con anteprima e link al post
+- **Clip della settimana**: ogni lunedì alle 10 la clip con più 🔥 va in `📢┃annunci` con un embed curato (mai doppia, nemmeno dopo un deploy)
+- **Sfida del giorno** in `🎯┃sfida-del-giorno` (alle 12, elenco in `src/data/challenges.js`): screenshot nel thread, XP solo dopo il "Confermo" dello staff
+- **Quiz anime** in `💬┃generale` ogni 2-5 ore, solo se la chat è attiva e non di notte (domande in `src/data/quiz.js`): il primo che risponde giusto prende XP
+- **Promemoria DM**: chi ha il ruolo **Scouter** riceve un messaggio privato 10 minuti prima di un evento Discord programmato (chi ha i DM chiusi viene saltato)
 - Regole a tema stream (in italiano, con versione corta in inglese)
 - Canali per chiacchierare, condividere le clip della live e proporre idee per le prossime live
 - Stanza vocale **📺 Guardiamo la Live** per vedere lo stream insieme
@@ -76,6 +83,8 @@ Spegni il bot in locale mentre gira su Railway, altrimenti ogni risposta arriva 
 - `ANTHROPIC_API_KEY`: traduzione delle patch notes più precisa (i termini del gioco restano in inglese). Senza, si usa il traduttore gratuito di Google.
 - `TRANSLATE_MODEL`: modello Claude per la traduzione (predefinito `claude-haiku-5-5`).
 - `DRY_RUN=1`: solo in locale, avvio a secco senza login.
+
+Ogni funzione nuova ha il suo interruttore in `settings` (`predictions`, `liveRole`, `build`, `clipHighlight`, `challenge`, `quiz`, `reminders`, `levels`, `stats`): basta mettere `enabled: false`.
 
 Nessuna variabile nuova è obbligatoria: soglia età account, banner del benvenuto, statistiche e livelli si regolano in `settings` dentro `src/template.js`. I follower Twitch arrivano da decapi.me, lo stesso servizio gratuito degli alert live, quindi non serve una chiave Twitch.
 
