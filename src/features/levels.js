@@ -217,6 +217,13 @@ function onReady(client) {
   });
 }
 
+// For other features (predictions, quiz, daily challenge). Returns false when levels are off.
+async function grantXp(member, amount, announceIn = null) {
+  if (!CFG.enabled || !member || member.user?.bot || !(amount > 0)) return false;
+  await addXp(member, amount, announceIn);
+  return true;
+}
+
 module.exports = {
-  onMessage, onInteraction, onReady, commands, REWARDS,
+  onMessage, onInteraction, onReady, commands, REWARDS, grantXp,
 };

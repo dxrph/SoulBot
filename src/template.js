@@ -75,6 +75,9 @@ const roles = [
   { key: 'lvl_jonin', name: 'Jonin', color: 0x4FC3F7, level: 20 },
   { key: 'lvl_anbu', name: 'ANBU', color: 0x7C4DFF, level: 30 },
   { key: 'lvl_kage', name: 'Kage', color: 0xC77DFF, level: 50 },
+
+  // NEW: temporary role for whoever is in 📺 Guardiamo la Live while ONYZUK4 is live (removed at the end)
+  { key: 'domain', name: 'Dominio Espanso', color: 0x7C4DFF },
 ];
 
 // vis: 'public' = everyone, 'member' = Egoisti only, 'staff' = staff only
@@ -134,6 +137,8 @@ const categories = [
       { name: '🇮🇹┃guida-eroi', type: 'forum', noPosts: true, special: 'heroes_it' },
       { name: '🇮🇹┃guida-build', type: 'forum', noPosts: true, special: 'builds_it' },
       { name: '🧠┃strategie', type: 'text', old: ['🧠┃strategy'] },
+      // NEW: daily Deadlock challenge. Read-only: people answer with a screenshot in the day's thread.
+      { name: '🎯┃sfida-del-giorno', type: 'text', readOnly: true, special: 'challenge' },
       { name: '❓┃domande-nuovi', type: 'text', old: ['❓┃newcomer-questions'] },
     ],
   },
@@ -214,6 +219,42 @@ const settings = {
     messageCooldownSec: 60, // ...at most once a minute per person
     voiceXpPerMinute: 6, // in voice with at least one other person, not muted/deafened, not in AFK
     saveEveryMinutes: 5,
+  },
+  predictions: {
+    enabled: true, // /predizione (staff): "vinco o perdo?" with buttons
+    xp: 40, // XP to everyone who guessed right
+    voteMinutes: 5, // votes close by themselves after this (staff can close earlier)
+  },
+  liveRole: {
+    enabled: true, // role 'Dominio Espanso' in 📺 Guardiamo la Live while live
+    channelName: '📺 Guardiamo la Live',
+  },
+  build: {
+    enabled: true, // /build <eroe>: top build from the build forums
+  },
+  clipHighlight: {
+    enabled: true, // Monday 10:00: most 🔥 clip of the week in 📢┃annunci
+  },
+  challenge: {
+    enabled: true, // daily Deadlock goal in 🎯┃sfida-del-giorno (list in src/data/challenges.js)
+    hour: 12, // Brussels time
+    xp: 60, // given only when staff presses "Confermo" on the screenshot
+  },
+  quiz: {
+    enabled: true, // anime question in chat now and then (list in src/data/quiz.js)
+    channelName: '💬┃generale',
+    minGapMinutes: 120, // at least this much between two quizzes
+    maxGapMinutes: 300, // ...and at most this (random in between)
+    minRecentMessages: 5, // only if the chat is alive: messages in the last 15 minutes
+    answerSeconds: 90,
+    xp: 30,
+    quietHours: [1, 11], // no quiz from 01:00 to 10:59 (Brussels)
+  },
+  reminders: {
+    enabled: true, // DM to Scouter members before a Discord scheduled event
+    minutesBefore: 10,
+    maxDms: 300, // safety cap per event
+    delayMs: 1200, // pause between two DMs (rate limit)
   },
 };
 
