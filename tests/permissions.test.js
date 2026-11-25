@@ -24,3 +24,16 @@ test('ensureEveryoneCanStream does nothing when already allowed', async () => {
   };
   assert.equal(await ensureEveryoneCanStream({ roles: { everyone } }), false);
 });
+
+test('ensureEveryoneNoMassPing removes only MentionEveryone', async () => {
+  const { ensureEveryoneNoMassPing } = require('../src/permissions');
+  const calls = [];
+  const everyone = {
+    permissions: new PermissionsBitField([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.MentionEveryone]).freeze(),
+    setPermissions: async (p) => calls.push(new PermissionsBitField(p)),
+  };
+  assert.equal(await ensureEveryoneNoMassPing({ roles: { everyone } }), true);
+  assert.deepEqual(calls[0].toArray(), ['ViewChannel']);
+  everyone.permissions = calls[0];
+  assert.equal(await ensureEveryoneNoMassPing({ roles: { everyone } }), false);
+});

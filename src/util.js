@@ -70,8 +70,11 @@ function mergeOw(list) {
   return [...map.values()];
 }
 
-async function logEvent(guild, { title, description, color = palette.muted, fields = [], components = [] }) {
-  const ch = channelByKey(guild, 'modlog');
+// to: special key of a dedicated log channel (e.g. 'log_messages'); falls back to the mod log when missing
+async function logEvent(guild, {
+  title, description, color = palette.muted, fields = [], components = [], to,
+}) {
+  const ch = (to && channelByKey(guild, to)) || channelByKey(guild, 'modlog');
   if (!ch) return;
   const embed = withFooter(new EmbedBuilder().setTitle(title).setColor(color).setTimestamp());
   if (description) embed.setDescription(description.slice(0, 4000));

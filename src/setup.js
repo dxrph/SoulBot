@@ -4,7 +4,7 @@ const {
 const { roles, categories } = require('./template');
 const { roleMap, channelByKey, mergeOw, specialNames, remember } = require('./util');
 const { panels, isLegacyTitle } = require('./features');
-const { EVERYONE_PERMS, ensureEveryoneCanStream } = require('./permissions');
+const { EVERYONE_PERMS, ensureEveryoneCanStream, ensureEveryoneNoMassPing } = require('./permissions');
 const { guildSlash } = require('./slash');
 
 const pending = new Map();
@@ -18,17 +18,16 @@ const commands = [
     .setDefaultMemberPermissions(V.Administrator),
 ].map((c) => c.toJSON());
 
-function init(client) {
-  client.on('interactionCreate', async (i) => {
-    try {
-      if (i.isChatInputCommand() && i.commandName === 'setup-server') return await askConfirm(i);
-      if (i.isChatInputCommand() && i.commandName === 'add-tools') return await addTools(i);
-      if (i.isChatInputCommand() && i.commandName === 'refresh-panels') return await refresh(i);
-      if (i.isButton() && i.customId.startsWith('setup:')) return await handleWipeButton(i);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+// Called by the single interactionCreate dispatcher in index.js
+async function onInteraction(i) {
+  try {
+    if (i.isChatInputCommand() && i.commandName === 'setup-server') return await askConfirm(i);
+    if (i.isChatInputCommand() && i.commandName === 'add-tools') return await addTools(i);
+    if (i.isChatInputCommand() && i.commandName === 'refresh-panels') return await refresh(i);
+    if (i.isButton() && i.customId.startsWith('setup:')) return await handleWipeButton(i);
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 const ownerOnly = (i) => i.reply({ content: 'Solo il proprietario del server può usare questo comando.', flags: MessageFlags.Ephemeral });
@@ -79,14 +78,16 @@ async function addTools(i) {
     const renamed = await renameLegacy(i.guild);
     const R = await ensureRoles(i.guild);
     const streamFixed = await ensureEveryoneCanStream(i.guild);
+    const pingFixed = await ensureEveryoneNoMassPing(i.guild);
     const failed = await buildCategories(i.guild, R, false);
     await orderCategories(i.guild);
     remember(i.guild);
     await ensurePanels(i.guild);
     i.client.emit('patchesCheck');
+    i.client.emit('statsCheck');
     await i.editReply(failed.length
       ? `Fatto, ma questi forum non sono stati creati: ${failed.join(', ')}. Attiva **Community** nelle impostazioni, poi rilancia /add-tools.`
-      : `Server aggiornato${renamed ? ` (${renamed} rinominati)` : ''}.${streamFixed ? ' Condivisione schermo attiva per tutti.' : ''} Usa /refresh-panels per ripubblicare i pannelli e /sync-guides per i forum eroi e build.`);
+      : `Server aggiornato${renamed ? ` (${renamed} rinominati)` : ''}.${streamFixed ? ' Condivisione schermo attiva per tutti.' : ''}${pingFixed ? ' Tolto @everyone al ruolo everyone.' : ''} Usa /refresh-panels per ripubblicare i pannelli e /sync-guides per i forum eroi e build.`);
   } catch (err) {
     console.error(err);
     await i.editReply(`Non riuscito: ${err.message}`);
@@ -154,6 +155,7 @@ async function buildCategories(guild, R, onlySpecial) {
       if (onlySpecial && !ch.special) continue;
       if (guild.channels.cache.some((x) => x.name === ch.name)) continue;
       if (ch.limit && guild.channels.cache.some((x) => x.name.startsWith(ch.name.replace(/\d+ \(\d+\)$/, '')))) continue;
+      if (ch.stat && guild.channels.cache.some((x) => x.name.startsWith(ch.name))) continue; // counter already there (renamed "Name: N")
 
       const isVoice = ch.type === 'voice';
       const isForum = ch.type === 'forum';
@@ -194,6 +196,10 @@ function channelOw(guild, R, cat, ch) {
     ow.push({ id: everyone.id, deny: [V.SendMessages, V.AddReactions] });
     ow.push({ id: R.player.id, deny: [V.SendMessages] });
     for (const s of staff) ow.push({ id: s.id, allow: [V.SendMessages] });
+  }
+  if (ch.locked) {
+    // counter channels: visible to all, nobody joins (admins bypass overwrites anyway)
+    for (const r of [everyone, R.player, ...staff]) ow.push({ id: r.id, deny: [V.Connect] });
   }
   if (ch.noPosts) {
     ow.push({ id: everyone.id, deny: [V.CreatePublicThreads, V.CreatePrivateThreads] });
@@ -290,4 +296,4 @@ async function refreshPanels(guild) {
   }
 }
 
-module.exports = { init, commands, specialNames, renameLegacy };
+module.exports = { onInteraction, commands, specialNames, renameLegacy };

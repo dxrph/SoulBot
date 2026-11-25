@@ -1,22 +1,13 @@
-const features = [
-  require('./live'),
-  require('./verify'),
-  require('./roles'),
-  require('./rankrequest'),
-  require('./rules'),
-  require('./voice'),
-  require('./say'),
-  require('./modlog'),
-  require('./security'),
-  require('./tickets'),
-  require('./gameinvite'),
-  require('./lfg'),
-  require('./patches'),
-  require('./guides'),
-  require('./clips'),
-  require('./anime'),
-  require('./sondaggio'),
+// Each feature may export: init(client) for its own events, and the hooks called by the single
+// dispatcher in index.js: onInteraction(i), onMessage(m), onReady(client).
+const NAMES = [
+  'live', 'verify', 'roles', 'rankrequest', 'rules', 'voice', 'say', 'modlog', 'security', 'tickets',
+  'gameinvite', 'lfg', 'patches', 'guides', 'clips', 'anime', 'sondaggio', 'stats',
+  'levels', 'events', 'soundboard',
+  'predictions', 'liveroom', 'build', 'challenge', 'quiz', 'reminders',
 ];
+// eslint-disable-next-line global-require, import/no-dynamic-require
+const features = NAMES.map((name) => Object.assign(require(`./${name}`), { name }));
 
 const OLD_TITLES = [
   '🔥 Become Soulbound',

@@ -81,18 +81,16 @@ async function check(client) {
   }
 }
 
-function init(client) {
-  client.once('clientReady', () => {
-    let busy = false; // startup check and a manual trigger must not post the same patch twice
-    const run = async () => {
-      if (busy) return;
-      busy = true;
-      try { await check(client); } catch (e) { console.error(e); } finally { busy = false; }
-    };
-    setTimeout(run, 10_000);
-    client.on('patchesCheck', run); // fired right after /add-tools or /sync-guides
-    setInterval(run, INTERVAL_MS).unref();
-  });
+function onReady(client) {
+  let busy = false; // startup check and a manual trigger must not post the same patch twice
+  const run = async () => {
+    if (busy) return;
+    busy = true;
+    try { await check(client); } catch (e) { console.error(e); } finally { busy = false; }
+  };
+  setTimeout(run, 10_000);
+  client.on('patchesCheck', run); // fired right after /add-tools or /sync-guides
+  setInterval(run, INTERVAL_MS).unref();
 }
 
-module.exports = { init };
+module.exports = { onReady };

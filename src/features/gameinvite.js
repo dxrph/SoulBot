@@ -110,17 +110,15 @@ async function handleButton(i) {
   return i.update({ ...card({ ...state, status }), allowedMentions: { parse: [] } });
 }
 
-function init(client) {
-  client.on('interactionCreate', async (i) => {
-    try {
-      if (i.isButton() && i.customId === 'gi:request') return await openRequest(i);
-      if (i.isModalSubmit() && i.customId === 'gi:modal') return await submitRequest(i);
-      if (i.isButton() && i.customId.startsWith('gi:')) return await handleButton(i);
-    } catch (err) {
-      console.error(err);
-      if (!i.replied && !i.deferred) await i.reply({ content: `❌ ${err.message}`, flags: MessageFlags.Ephemeral }).catch(() => {});
-    }
-  });
+async function onInteraction(i) {
+  try {
+    if (i.isButton() && i.customId === 'gi:request') return await openRequest(i);
+    if (i.isModalSubmit() && i.customId === 'gi:modal') return await submitRequest(i);
+    if (i.isButton() && i.customId.startsWith('gi:')) return await handleButton(i);
+  } catch (err) {
+    console.error(err);
+    if (!i.replied && !i.deferred) await i.reply({ content: `❌ ${err.message}`, flags: MessageFlags.Ephemeral }).catch(() => {});
+  }
 }
 
-module.exports = { init, panels };
+module.exports = { onInteraction, panels };

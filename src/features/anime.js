@@ -61,15 +61,13 @@ async function clearAnime(i) {
   await i.reply({ content: 'Pannello anime rimosso.', flags: MessageFlags.Ephemeral });
 }
 
-function init(client) {
-  client.on('interactionCreate', async (i) => {
-    try {
-      if (i.isChatInputCommand() && i.commandName === 'anime') return await setAnime(i);
-      if (i.isChatInputCommand() && i.commandName === 'anime-off') return await clearAnime(i);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+async function onInteraction(i) {
+  try {
+    if (i.isChatInputCommand() && i.commandName === 'anime') return await setAnime(i);
+    if (i.isChatInputCommand() && i.commandName === 'anime-off') return await clearAnime(i);
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-module.exports = { init, commands };
+module.exports = { onInteraction, commands };
