@@ -1,7 +1,8 @@
 // ONYZUK4 community server: the Discord home of twitch.tv/onyzuk4.
 // Edit names, colors, channels and social links here only.
 //
-// role.group  -> 'rank' | 'region' | 'extra': shown in the self-assign menus of the roles channel
+// role.group  -> 'rank' | 'extra' | 'interest': shown in the self-assign menus of the roles channel
+// 'region' is kept on the existing EU/NA/Asia roles but is no longer offered in the panel
 // channel.special -> channel used by a bot feature (looked up by exact name, so keep names in sync)
 // old -> previous name(s): /add-tools renames an existing role, category or channel instead of making a copy
 
@@ -76,6 +77,18 @@ const roles = [
 
   // NEW: temporary role for whoever is in 📺 Guardiamo la Live while ONYZUK4 is live (removed at the end)
   { key: 'domain', name: 'Dominio Espanso', color: 0x7C4DFF },
+
+  // Anime interests (self-assign in the roles panel). Created by /add-tools; nothing is deleted.
+  { key: 'anime_jjk', name: 'Jujutsu Kaisen', color: 0x7C4DFF, group: 'interest' },
+  { key: 'anime_naruto', name: 'Naruto', color: 0xFFD54F, group: 'interest' },
+  { key: 'anime_onepiece', name: 'One Piece', color: 0xE11D2A, group: 'interest' },
+  { key: 'anime_bleach', name: 'Bleach', color: 0xE67E22, group: 'interest' },
+  { key: 'anime_hxh', name: 'Hunter x Hunter', color: 0x2ECC71, group: 'interest' },
+  { key: 'anime_csm', name: 'Chainsaw Man', color: 0xC77DFF, group: 'interest' },
+  { key: 'anime_aot', name: 'Attack on Titan', color: 0xBCAAA4, group: 'interest' },
+  { key: 'anime_db', name: 'Dragon Ball', color: 0xF1C40F, group: 'interest' },
+  { key: 'anime_opm', name: 'One Punch Man', color: 0x90A4AE, group: 'interest' },
+  { key: 'anime_dn', name: 'Death Note', color: 0x607D8B, group: 'interest' },
 ];
 
 // vis: 'public' = everyone, 'member' = Egoisti only, 'staff' = staff only

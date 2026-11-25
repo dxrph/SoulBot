@@ -33,7 +33,7 @@ Il bot del server Discord di **[ONYZUK4](https://twitch.tv/onyzuk4)**: il posto 
 - Canali per chiacchierare, condividere le clip della live e proporre idee per le prossime live
 - Stanza vocale **📺 Guardiamo la Live** per vedere lo stream insieme
 - Ruoli supporter: **💎 VIP della Live** e **💜 Sub**
-- Pannello `🎭┃ruoli` con quattro pulsanti (Rank, Region, Heroes, Pings) e `/profilo` per cambiare il profilo da qualsiasi canale
+- Pannello `🎭┃ruoli` (rank Deadlock, eroi main, notifiche Scouter/Hunters, interessi anime) con i pulsanti **I miei ruoli** e **Resetta**, e `/profilo` da qualsiasi canale. La regione di gioco non si sceglie più dal pannello
 
 ## 🎮 Giocare con ONYZUK4
 - **⚔️ THE BATTLEFIELD**: stanze vocali Ranked, Casual, Duo e Trio che restano sempre con esattamente una stanza vuota per tipo, più `➕ Create Room` per crearsi una stanza propria, con un **pannello di controllo** nella chat della stanza (rinomina, blocca/sblocca, limite, passa la stanza; massimo 2 cambi di nome ogni 10 minuti)
@@ -51,7 +51,7 @@ Il bot del server Discord di **[ONYZUK4](https://twitch.tv/onyzuk4)**: il posto 
 ## ⚙️ Comandi per il proprietario
 - `/setup-server`: cancella tutto e ricostruisce il server da zero (chiede conferma)
 - `/add-tools`: aggiorna il server allo schema nuovo, rinomina i ruoli e i canali vecchi (i membri tengono i loro ruoli), crea quello che manca e non cancella niente
-- `/refresh-panels`: ripubblica tutti i pannelli con la grafica aggiornata
+- `/refresh-panels`: aggiorna i pannelli già pubblicati (li modifica, non ne crea di doppi)
 - `/carica-suoni`: carica suoni nella soundboard, da un allegato o da tutti i file della cartella `sounds/`
 
 `/add-tools` toglie anche il permesso "Menziona @everyone" al ruolo everyone (solo quello, il resto non cambia).

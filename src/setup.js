@@ -6,6 +6,8 @@ const { roleMap, channelByKey, mergeOw, specialNames, remember } = require('./ut
 const { panels, isLegacyTitle } = require('./features');
 const { EVERYONE_PERMS, ensureEveryoneCanStream, ensureEveryoneNoMassPing } = require('./permissions');
 const { guildSlash } = require('./slash');
+const { roleColors, planRolePositions } = require('./roleSetup');
+const { planPanelRefresh } = require('./panelRefresh');
 
 const pending = new Map();
 
@@ -14,7 +16,7 @@ const commands = [
     .setDefaultMemberPermissions(V.Administrator),
   guildSlash('add-tools', 'Aggiorna il server al layout nuovo: rinomina, aggiunge, non cancella niente')
     .setDefaultMemberPermissions(V.Administrator),
-  guildSlash('refresh-panels', 'Ripubblica i pannelli (verifica, ruoli, regole, live, social, LFG) con il design nuovo')
+  guildSlash('refresh-panels', 'Aggiorna i pannelli esistenti (li modifica, non ne crea di doppi)')
     .setDefaultMemberPermissions(V.Administrator),
 ].map((c) => c.toJSON());
 
@@ -126,7 +128,7 @@ async function build(guild) {
   for (const def of roles) {
     const perms = def.admin ? [V.Administrator] : (def.perms ?? []).map((p) => V[p]);
     R[def.key] = await guild.roles.create({
-      name: def.name, color: def.color, hoist: !!def.hoist, permissions: perms,
+      name: def.name, ...roleColors(def.color), hoist: !!def.hoist, permissions: perms,
     });
   }
   const top = guild.members.me.roles.highest.position - 1;
@@ -215,7 +217,7 @@ async function renameLegacy(guild) {
   for (const def of roles) {
     if (!def.old || has([...guild.roles.cache.values()], def.name)) continue;
     const found = guild.roles.cache.find((r) => def.old.includes(r.name));
-    if (found) { await found.edit({ name: def.name, color: def.color }).catch(console.warn); count += 1; }
+    if (found) { await found.edit({ name: def.name, ...roleColors(def.color) }).catch(console.warn); count += 1; }
   }
   const R = roleMap(guild);
   const ready = R.player && R.owner && R.admin && R.mod && R.coach && R.muted;
@@ -240,14 +242,32 @@ async function renameLegacy(guild) {
   return count;
 }
 
+async function placeTemplateRoles(guild, R) {
+  const me = guild.members.me;
+  if (!me) return;
+  const planned = planRolePositions(
+    roles.map((d) => d.key),
+    Object.fromEntries(Object.entries(R).map(([k, r]) => [k, {
+      id: r.id, managed: r.managed, position: r.position,
+    }])),
+    me.roles.highest.position,
+  );
+  if (planned.length) await guild.roles.setPositions(planned).catch(console.warn);
+}
+
 async function ensureRoles(guild) {
   await guild.roles.fetch();
   const R = roleMap(guild);
   for (const def of roles) {
     if (R[def.key]) continue;
     const perms = def.admin ? [V.Administrator] : (def.perms ?? []).map((p) => V[p]);
-    R[def.key] = await guild.roles.create({ name: def.name, color: def.color, hoist: !!def.hoist, permissions: perms });
+    R[def.key] = await guild.roles.create({
+      name: def.name, ...roleColors(def.color), hoist: !!def.hoist, permissions: perms,
+    });
   }
+  // Re-running /add-tools repositions existing roles (Genin–Kage, Dominio Espanso, …)
+  // under the bot, without recreating them, so their color shows in the list.
+  await placeTemplateRoles(guild, R);
   return R;
 }
 
@@ -268,9 +288,10 @@ async function ensurePanels(guild) {
     if (!ch) continue;
     try {
       const list = await asList(key, guild);
+      const titles = new Set(list.map(titleOf));
       const recent = await ch.messages.fetch({ limit: 50 }).catch(() => null);
       const mine = (recent ?? []).filter((m) => m.author.id === guild.client.user.id);
-      if (mine.some((m) => m.embeds[0]?.title === titleOf(list[0]))) continue;
+      if (mine.some((m) => titles.has(m.embeds[0]?.title) || isLegacyTitle(m.embeds[0]?.title))) continue;
       for (const payload of list) await ch.send(payload);
     } catch (err) {
       console.error('panel', key, err.message);
@@ -284,12 +305,19 @@ async function refreshPanels(guild) {
     if (!ch) continue;
     try {
       const list = await asList(key, guild);
-      const titles = new Set(list.map(titleOf));
       const recent = await ch.messages.fetch({ limit: 100 }).catch(() => []);
-      for (const m of recent.values()) {
-        if (m.author.id === guild.client.user.id && (titles.has(m.embeds[0]?.title) || isLegacyTitle(m.embeds[0]?.title))) await m.delete().catch(() => {});
+      const existing = [...recent.values()]
+        .filter((m) => m.author.id === guild.client.user.id)
+        .map((m) => ({ id: m.id, title: m.embeds[0]?.title, createdTimestamp: m.createdTimestamp, message: m }));
+      const plan = planPanelRefresh(existing, list, isLegacyTitle, titleOf);
+      const byId = Object.fromEntries(existing.map((m) => [m.id, m.message]));
+      for (const edit of plan.edits) {
+        await byId[edit.id].edit(list[edit.payloadIndex]).catch((err) => {
+          console.error('panel edit', key, err.message);
+        });
       }
-      for (const payload of list) await ch.send(payload);
+      for (const idx of plan.sends) await ch.send(list[idx]);
+      // Leftover old copies are left in place: we never delete panel messages here.
     } catch (err) {
       console.error('panel', key, err.message);
     }
