@@ -9,7 +9,7 @@ const GREY = 0x95a5a6;
 const BLUE = 0x4FC3F7;
 const PURPLE = 0x7C4DFF;
 
-// Self-assigned roles (free ranks, regions, notifications, heroes) change all the time: not logged
+// Self-assigned roles (free ranks, notifications, interests, heroes) change all the time: not logged
 const SELF_ASSIGN = new Set(roleDefs.filter((r) => r.group && !r.verify).map((r) => r.name));
 const quietRole = (guild, role) => SELF_ASSIGN.has(role.name)
   || Object.values(store.getHeroRoles(guild.id)).includes(role.id);

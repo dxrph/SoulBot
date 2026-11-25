@@ -3,6 +3,7 @@ const API = 'https://api.deadlock-api.com/v1/assets/heroes?language=english';
 const TTL = 6 * 60 * 60_000;
 const { roles } = require('./template');
 const store = require('./store');
+const { roleColors } = require('./roleSetup');
 
 const CLASSES = {
   marksman: { label: 'Tiratori', emoji: '🎯', color: 0xe74c3c, blurb: 'Potenza di fuoco. Vinci gli scontri sparando meglio di tutti.' },
@@ -50,7 +51,7 @@ async function ensureHeroRoles(guild) {
     let role = guild.roles.cache.find((r) => r.name === h.name);
     if (!role) {
       const color = h.colors?.style_hex ? parseInt(h.colors.style_hex.slice(1), 16) : 0x95a5a6;
-      role = await guild.roles.create({ name: h.name, color, reason: 'Hero main role' }).catch((e) => {
+      role = await guild.roles.create({ name: h.name, ...roleColors(color), reason: 'Hero main role' }).catch((e) => {
         console.warn('hero role', h.name, e.message);
         return null;
       });
